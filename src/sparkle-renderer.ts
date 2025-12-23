@@ -15,6 +15,10 @@ const MAX_PARTICLES = 24576;
 const FLOATS_PER_PARTICLE = 8; // pos0x,pos0y, velx,vely, spawn,life, sizePx, seed
 const BYTES_PER_PARTICLE = FLOATS_PER_PARTICLE * 4;
 const MAX_SPAWNS_PER_FRAME = 1536;
+const KIND_DUST = 0;
+const KIND_SPARK = 1;
+const KIND_STAR = 2;
+const KIND_COMET = 3;
 
 function smoothstep(edge0: number, edge1: number, x: number): number {
   const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
@@ -61,6 +65,10 @@ export class SparkleRenderer {
   private sparkAccumulator = 0;
   private dustAccumulator = 0;
   private burstCooldown = 0;
+  private haloPhase = 0;
+  private haloAccumulator = 0;
+  private stillSeconds = 0;
+  private lastStampTime = -999;
 
   // Fast RNG (xorshift32)
   private rngState = 0x12345678;
@@ -233,6 +241,66 @@ export class SparkleRenderer {
     const speed = Math.hypot(this.mouseVelocity.x, this.mouseVelocity.y);
     const speedBoost = smoothstep(0.08, 2.4, speed);
 
+    // --- Magic wand halo: orbiting fairy dust around the cursor ---
+    if (dt > 0 && this.mouseRamp > 0.02) {
+      this.haloPhase += dt * (1.2 + speedBoost * 5.5);
+
+      // small, steady emission; increases when moving fast
+      const haloRate = (18 + speedBoost * 140) * this.mouseRamp; // dust/sec
+      this.haloAccumulator += haloRate * dt;
+
+      let haloCount = Math.floor(this.haloAccumulator);
+      this.haloAccumulator -= haloCount;
+
+      // hard cap keeps perf stable
+      haloCount = Math.min(haloCount, 12);
+
+      const radius = 0.014 + 0.012 * speedBoost;
+
+      for (let i = 0; i < haloCount; i++) {
+        const ang = this.haloPhase * Math.PI * 2 + this.rand01() * Math.PI * 2;
+
+        const ox = Math.cos(ang) * radius;
+        const oy = Math.sin(ang) * radius;
+
+        // tangential motion + tiny outward drift
+        const tang = 0.18 + speedBoost * 0.65;
+        const vx = -Math.sin(ang) * tang + ox * 0.8;
+        const vy = Math.cos(ang) * tang + oy * 0.8;
+
+        const life = 0.35 + this.rand01() * 0.55;
+        const sizeCss = 0.9 + this.rand01() * 2.2;
+        const sizePx = sizeCss * dpr;
+
+        this.queueParticle(
+          curPos.x + ox,
+          curPos.y + oy,
+          vx,
+          vy,
+          nowSec,
+          life,
+          sizePx,
+          this.makeSeed(KIND_DUST)
+        );
+      }
+    }
+
+    // --- “Star stamp” when the user pauses (super satisfying / kid-friendly) ---
+    if (dt > 0) {
+      if (active && speed < 0.07) {
+        this.stillSeconds += dt;
+      } else {
+        this.stillSeconds = 0;
+      }
+
+      if (active && this.stillSeconds > 0.22 && nowSec - this.lastStampTime > 0.35) {
+        this.stampHeroStar(nowSec, curPos, dpr, 10, 18, 1.1, 1.8);
+        this.emitDustRing(nowSec, curPos, dpr, 18);
+        this.lastStampTime = nowSec;
+        this.stillSeconds = 0.12;
+      }
+    }
+
     // Bursts on press + occasional flick bursts
     if (active && !this.prevActive) {
       this.emitRadialBurst(nowSec, curPos, dpr, 300);
@@ -297,11 +365,19 @@ export class SparkleRenderer {
           const vx = rx * vMag + perpX * side * vMag;
           const vy = ry * vMag + perpY * side * vMag;
 
-          const life = 0.24 + this.rand01() * 0.45 + speedBoost * 0.22;
-          const sizeCss = 1.6 + this.rand01() * 3.8 + speedBoost * 9.0;
+          const isComet = speedBoost > 0.75 && this.rand01() < 0.06;
+          const kind = isComet ? KIND_COMET : KIND_SPARK;
+
+          const life = isComet
+            ? (0.45 + this.rand01() * 0.55)
+            : (0.20 + this.rand01() * 0.38 + speedBoost * 0.18);
+
+          const sizeCss = isComet
+            ? (6.0 + this.rand01() * 10.0 + speedBoost * 10.0)
+            : (1.4 + this.rand01() * 3.4 + speedBoost * 8.0);
           const sizePx = sizeCss * dpr;
 
-          this.queueParticle(px + jx, py + jy, vx, vy, nowSec, life, sizePx, this.rand01());
+          this.queueParticle(px + jx, py + jy, vx, vy, nowSec, life, sizePx, this.makeSeed(kind));
         }
       }
     }
@@ -331,7 +407,7 @@ export class SparkleRenderer {
         const sizeCss = 0.9 + this.rand01() * 2.8;
         const sizePx = sizeCss * dpr;
 
-        this.queueParticle(tx, ty, vx, vy, nowSec, life, sizePx, this.rand01());
+        this.queueParticle(tx, ty, vx, vy, nowSec, life, sizePx, this.makeSeed(KIND_DUST));
       }
     }
 
@@ -339,6 +415,12 @@ export class SparkleRenderer {
     if (!active) {
       this.mouseVelocity.x *= 0.95;
       this.mouseVelocity.y *= 0.95;
+    }
+
+    // --- Big “finish” star on release ---
+    if (!active && this.prevActive) {
+      this.stampHeroStar(nowSec, curPos, dpr, 14, 26, 1.4, 2.4);
+      this.emitDustRing(nowSec, curPos, dpr, 28);
     }
 
     this.prevActive = active;
@@ -406,6 +488,10 @@ export class SparkleRenderer {
     x ^= x << 5;
     this.rngState = x;
     return ((x >>> 0) / 4294967296);
+  }
+
+  private makeSeed(kind: number): number {
+    return kind + this.rand01();
   }
 
   private queueParticle(
@@ -482,7 +568,7 @@ export class SparkleRenderer {
       const sizeCss = 2.2 + this.rand01() * 7.0;
       const sizePx = sizeCss * dpr;
 
-      this.queueParticle(pos.x, pos.y, vx, vy, nowSec, life, sizePx, this.rand01());
+      this.queueParticle(pos.x, pos.y, vx, vy, nowSec, life, sizePx, this.makeSeed(KIND_SPARK));
     }
   }
 
@@ -520,7 +606,66 @@ export class SparkleRenderer {
       const sizeCss = 2.0 + this.rand01() * 8.5;
       const sizePx = sizeCss * dpr;
 
-      this.queueParticle(pos.x, pos.y, vx, vy, nowSec, life, sizePx, this.rand01());
+      this.queueParticle(pos.x, pos.y, vx, vy, nowSec, life, sizePx, this.makeSeed(KIND_SPARK));
+    }
+  }
+
+  private stampHeroStar(
+    nowSec: number,
+    pos: { x: number; y: number },
+    dpr: number,
+    sizeCssMin: number,
+    sizeCssMax: number,
+    lifeMin: number,
+    lifeMax: number
+  ): void {
+    const sizeCss = sizeCssMin + this.rand01() * (sizeCssMax - sizeCssMin);
+    const sizePx = sizeCss * dpr;
+
+    const life = lifeMin + this.rand01() * (lifeMax - lifeMin);
+
+    // slow float upward (UV y+ is down, so negative y goes up)
+    const vx = (this.rand01() - 0.5) * 0.05;
+    const vy = -0.05 - this.rand01() * 0.07;
+
+    this.queueParticle(
+      pos.x,
+      pos.y,
+      vx,
+      vy,
+      nowSec,
+      life,
+      sizePx,
+      this.makeSeed(KIND_STAR)
+    );
+  }
+
+  private emitDustRing(nowSec: number, pos: { x: number; y: number }, dpr: number, count: number): void {
+    const n = Math.min(count, 40);
+    const radius = 0.018;
+
+    for (let i = 0; i < n; i++) {
+      const a = this.rand01() * Math.PI * 2;
+      const ox = Math.cos(a) * radius * (0.6 + this.rand01() * 0.6);
+      const oy = Math.sin(a) * radius * (0.6 + this.rand01() * 0.6);
+
+      const drift = 0.03 + this.rand01() * 0.08;
+      const vx = ox * drift * 30;
+      const vy = oy * drift * 30;
+
+      const life = 0.5 + this.rand01() * 0.7;
+      const sizePx = (0.8 + this.rand01() * 2.0) * dpr;
+
+      this.queueParticle(
+        pos.x + ox,
+        pos.y + oy,
+        vx,
+        vy,
+        nowSec,
+        life,
+        sizePx,
+        this.makeSeed(KIND_DUST)
+      );
     }
   }
 }

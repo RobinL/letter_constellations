@@ -59,7 +59,7 @@ fn sparkVertexMain(
   let spawnTime = b.x;
   let life = max(b.y, 0.0001);
   let sizePx = b.z;
-  let seed = b.w;
+  let seedKind = b.w;
 
   let age = uniforms.time - spawnTime;
 
@@ -99,7 +99,7 @@ fn sparkVertexMain(
   out.position = vec4<f32>(clip, 0.0, 1.0);
 
   out.local = local;
-  out.seed = seed;
+  out.seed = seedKind;
   out.age01 = clamp(age / life, 0.0, 1.0);
   out.speed = speed;
   out.sizePx = sizePx;
@@ -108,58 +108,116 @@ fn sparkVertexMain(
 
 @fragment
 fn sparkFragmentMain(in: VertexOut) -> @location(0) vec4<f32> {
-  let r = length(in.local);
+  let kind = floor(in.seed);
+  let seed = fract(in.seed);
 
-  // Soft kill outside bounds (reduces overdraw).
-  if (r > 1.4) {
+  let speedBoost = smoothstep(0.05, 2.8, in.speed);
+
+  // Reconstruct the same stretch the vertex used so we can “un-stretch”
+  var stretch = 1.0 + speedBoost * 3.2;
+  if (kind > 1.5 && kind < 2.5) { stretch = 1.0; }     // hero star: not stretched
+  if (kind > 2.5) { stretch *= 3.0; }                  // comet: extra long
+
+  // Work in un-stretched space for stable distance
+  let q = vec2<f32>(in.local.x / stretch, in.local.y);
+  let d = length(q);
+
+  if (d > 1.55) {
     return vec4<f32>(0.0);
   }
 
-  let fadeIn  = smoothstep(0.0, 0.12, in.age01);
-  let fadeOut = 1.0 - smoothstep(0.65, 1.0, in.age01);
+  let fadeIn  = smoothstep(0.0, 0.10, in.age01);
+  let fadeOut = 1.0 - smoothstep(0.68, 1.0, in.age01);
   let lifeFade = fadeIn * fadeOut;
 
-  let core = pow(max(0.0, 1.0 - r), 10.0);
-  let glow = pow(max(0.0, 1.0 - r), 2.0) * 0.35;
+  // --- Twinkle (rich shimmer + occasional pops) ---
+  let base = 8.0 + 22.0 * hash11(seed * 17.3 + kind * 4.1);
+  let twSpeed = base * (1.0 + speedBoost * 0.55);
 
-  // Rays show up more for larger sprites.
-  let isSpark = smoothstep(4.0, 8.0, in.sizePx);
-  let ang = atan2(in.local.y, in.local.x);
-  let rayCount = 6.0 + floor(hash11(in.seed * 19.17) * 6.0);
-  let rays =
-    pow(abs(cos(ang * rayCount + in.seed * 6.28318)), 18.0) *
-    smoothstep(1.3, 0.2, r);
+  let t1 = 0.5 + 0.5 * sin(uniforms.time * twSpeed + seed * 6.28318);
+  let t2 = 0.5 + 0.5 * sin(uniforms.time * (twSpeed * 1.73) + seed * 2.123);
 
-  // Spiky twinkle (rare bright flashes)
-  let speedBoost = smoothstep(0.05, 2.8, in.speed);
+  let shimmerFreq = 24.0 + 80.0 * hash11(seed * 9.2);
+  let shimmer = 0.85 + 0.15 * sin(uniforms.time * shimmerFreq + dot(q, vec2<f32>(11.3, 9.7)));
 
-  // Two oscillators -> richer flicker, plus baseline shimmer
-  let twBase = 10.0 + 24.0 * hash11(in.seed * 3.91);
-  let twSpeed = twBase * (1.0 + speedBoost * 0.55);
+  var twinkle = mix(0.3, 1.0, pow(max(t1, t2), 10.0)) * shimmer;
 
-  let tw1 = 0.5 + 0.5 * sin(uniforms.time * twSpeed + in.seed * 6.28318);
-  let tw2 = 0.5 + 0.5 * sin(uniforms.time * (twSpeed * 1.73) + in.seed * 2.123);
+  // Kind-specific twinkle behavior
+  if (kind < 0.5) { // dust: gentle sparkle
+    twinkle = mix(0.55, 1.0, pow(t1, 6.0)) * shimmer;
+  } else if (kind > 1.5 && kind < 2.5) { // hero star: slow “breathing” magic
+    let breath = 0.65 + 0.35 * sin(uniforms.time * 1.6 + seed * 6.28318);
+    twinkle = mix(0.5, 1.0, pow(max(t1, t2), 8.0)) * breath * shimmer;
+  } else if (kind > 2.5) { // comet: sharp pops
+    twinkle = mix(0.35, 1.0, pow(max(t1, t2), 12.0)) * shimmer;
+  }
 
-  // Visible baseline + rare bright pops
-  var twinkle = mix(0.35, 1.0, pow(max(tw1, tw2), 10.0));
+  // --- Shape ---
+  var core = 0.0;
+  var glow = 0.0;
+  var rays = 0.0;
 
-  // Small per-fragment shimmer so the sparkle “surface” dances
-  let shimmerFreq = 28.0 + 60.0 * hash11(in.seed * 9.2);
-  let shimmer = 0.85 + 0.15 * sin(uniforms.time * shimmerFreq + dot(in.local, vec2<f32>(12.3, 9.7)));
-  twinkle *= shimmer;
+  let ang = atan2(q.y, q.x) + seed * 6.28318;
 
-  var intensity = (core + glow + rays * 0.9 * isSpark) * twinkle;
+  if (kind < 0.5) {
+    // tiny fairy dust
+    core = pow(max(0.0, 1.0 - d), 12.0);
+    glow = pow(max(0.0, 1.0 - d), 2.2) * 0.6;
+    rays = pow(abs(cos(ang * 4.0)), 18.0) * smoothstep(1.2, 0.15, d) * 0.35;
+  } else if (kind < 1.5) {
+    // spark
+    core = pow(max(0.0, 1.0 - d), 10.0);
+    glow = pow(max(0.0, 1.0 - d), 2.0) * 0.45;
+    let rc = 7.0 + floor(hash11(seed * 19.17) * 7.0);
+    rays = pow(abs(cos(ang * rc)), 18.0) * smoothstep(1.3, 0.2, d);
+  } else if (kind < 2.5) {
+    // hero star (big 5-point star + cross sparkle)
+    let spikes = pow(abs(cos(ang * 5.0)), 26.0);
+    let cross  = pow(abs(cos(ang * 2.0)), 22.0) * 0.55;
+    let star = max(spikes, cross);
+
+    core = pow(max(0.0, 1.0 - d), 6.0) * (0.55 + star * 1.4);
+    glow = pow(max(0.0, 1.0 - d), 1.8) * 1.15;
+    rays = star * smoothstep(1.25, 0.1, d) * 1.1;
+  } else {
+    // comet (shooting star)
+    let t = clamp(q.x * 0.5 + 0.5, 0.0, 1.0);  // 0 tail .. 1 head
+    let head = pow(t, 10.0);
+    let tail = pow(1.0 - t, 1.6);
+
+    let width = exp(-q.y * q.y * 10.0);
+
+    core = width * (head * 1.25 + tail * 0.55) * pow(max(0.0, 1.0 - abs(q.x)), 0.6);
+    glow = width * pow(max(0.0, 1.0 - d), 1.6) * 0.95;
+    rays = pow(abs(cos(ang * 6.0)), 18.0) * smoothstep(1.2, 0.12, d) * 0.55;
+  }
+
+  var intensity = (core + glow + rays) * twinkle;
   intensity *= lifeFade;
-  intensity *= (0.75 + speedBoost * 1.8);
   intensity *= clamp(uniforms.global, 0.0, 1.0);
 
-  // Tiny dust needs a touch more energy.
-  intensity *= mix(1.15, 1.0, isSpark);
+  // Motion energy (don’t overboost hero stars)
+  if (kind < 2.5) {
+    intensity *= (0.55 + speedBoost * 1.25);
+  } else {
+    intensity *= 1.05;
+  }
 
   intensity = min(intensity, 1.0);
 
-  let color = sparkleColor(in.seed, uniforms.time);
+  // --- Color (aurora palette + kid-friendly gold stars) ---
+  var color = sparkleColor(seed, uniforms.time);
 
-  // Premultiplied output
+  if (kind < 0.5) {
+    color = mix(vec3<f32>(1.0, 1.0, 1.0), color, 0.35); // dust whiter
+  } else if (kind < 1.5) {
+    color = mix(color, vec3<f32>(1.0, 1.0, 1.0), 0.15); // sparks slightly whiter
+  } else if (kind < 2.5) {
+    let gold = vec3<f32>(1.0, 0.9, 0.55);
+    color = mix(gold, color, 0.25); // golden hero stars
+  } else {
+    color = mix(vec3<f32>(1.0, 1.0, 1.0), color, 0.55); // comets bright
+  }
+
   return vec4<f32>(color * intensity, intensity);
 }
