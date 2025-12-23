@@ -67,6 +67,8 @@ export class SparkleRenderer {
   // Dot rendering state
   private dotCount = 0;
   private dotScratch = new Float32Array(MAX_DOTS * FLOATS_PER_DOT);
+  private dotStates = new Int8Array(MAX_DOTS);
+  private dotStateTimes = new Float32Array(MAX_DOTS);
 
   // Particle ring buffer + batched writes (at most 2 writeBuffer calls/frame)
   private nextParticleIndex = 0;
@@ -281,11 +283,12 @@ export class SparkleRenderer {
       return;
     }
 
+    const nowSec = (performance.now() - this.startTimeMs) / 1000;
     const dpr = Math.max(1, window.devicePixelRatio || 1);
     const cssW = Math.max(1, this.canvas.width / dpr);
     const cssH = Math.max(1, this.canvas.height / dpr);
 
-    const baseRadius = Math.max(6, radius);
+    const baseRadius = Math.max(10, radius * 1.3);
 
     for (let i = 0; i < count; i += 1) {
       const dot = dots[i];
@@ -299,8 +302,16 @@ export class SparkleRenderer {
         state = 1;
       }
 
+      if (this.dotStates[i] !== state) {
+        this.dotStates[i] = state;
+        this.dotStateTimes[i] = nowSec;
+        if (state === 2) {
+          this.emitDotCompleteBurst(nowSec, { x: nx, y: ny }, dpr);
+        }
+      }
+
       const sizeCss =
-        state === 1 ? baseRadius * 1.25 : state === 2 ? baseRadius * 1.05 : baseRadius * 0.95;
+        state === 1 ? baseRadius * 1.45 : state === 2 ? baseRadius * 1.2 : baseRadius * 1.05;
       const sizePx = sizeCss * dpr;
 
       const base = i * FLOATS_PER_DOT;
@@ -309,7 +320,7 @@ export class SparkleRenderer {
       this.dotScratch[base + 2] = sizePx;
       this.dotScratch[base + 3] = state;
       this.dotScratch[base + 4] = this.hashSeed(i);
-      this.dotScratch[base + 5] = 0;
+      this.dotScratch[base + 5] = this.dotStateTimes[i];
       this.dotScratch[base + 6] = 0;
       this.dotScratch[base + 7] = 0;
     }
@@ -569,9 +580,9 @@ export class SparkleRenderer {
     this.dotUniformScratch[2] = this.canvas.width;
     this.dotUniformScratch[3] = this.canvas.height;
     this.dotUniformScratch[4] = 1;
-    this.dotUniformScratch[5] = 0;
-    this.dotUniformScratch[6] = 0;
-    this.dotUniformScratch[7] = 0;
+    this.dotUniformScratch[5] = this.mouseRamp;
+    this.dotUniformScratch[6] = this.mousePos.x;
+    this.dotUniformScratch[7] = this.mousePos.y;
     this.device.queue.writeBuffer(this.dotUniformBuffer, 0, this.dotUniformScratch);
 
     const commandEncoder = this.device.createCommandEncoder();
@@ -814,5 +825,15 @@ export class SparkleRenderer {
         this.makeSeed(KIND_DUST)
       );
     }
+  }
+
+  private emitDotCompleteBurst(
+    nowSec: number,
+    pos: { x: number; y: number },
+    dpr: number
+  ): void {
+    this.emitRadialBurst(nowSec, pos, dpr, 320);
+    this.emitDustRing(nowSec, pos, dpr, 80);
+    this.stampHeroStar(nowSec, pos, dpr, 18, 28, 1.2, 2.0);
   }
 }
