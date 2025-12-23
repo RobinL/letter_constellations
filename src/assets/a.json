@@ -1,0 +1,79 @@
+[
+  {
+    "order": 1,
+    "x": 730,
+    "y": 320,
+    "type": "start_dot",
+    "note": "Solid black dot"
+  },
+  {
+    "order": 2,
+    "x": 600,
+    "y": 220,
+    "type": "dash",
+    "note": "Top curve"
+  },
+  {
+    "order": 3,
+    "x": 420,
+    "y": 250,
+    "type": "dash",
+    "note": "Top-left curve"
+  },
+  {
+    "order": 4,
+    "x": 280,
+    "y": 380,
+    "type": "dash",
+    "note": "Left side (near arrow)"
+  },
+  {
+    "order": 5,
+    "x": 250,
+    "y": 550,
+    "type": "dash",
+    "note": "Bottom-left side"
+  },
+  {
+    "order": 6,
+    "x": 300,
+    "y": 700,
+    "type": "dash",
+    "note": "Bottom curve"
+  },
+  {
+    "order": 7,
+    "x": 460,
+    "y": 770,
+    "type": "dash",
+    "note": "Bottom center"
+  },
+  {
+    "order": 8,
+    "x": 630,
+    "y": 750,
+    "type": "dash",
+    "note": "Bottom-right (end of loop)"
+  },
+  {
+    "order": 9,
+    "x": 800,
+    "y": 350,
+    "type": "dash",
+    "note": "Top of vertical stem"
+  },
+  {
+    "order": 10,
+    "x": 800,
+    "y": 520,
+    "type": "dash",
+    "note": "Middle of vertical stem"
+  },
+  {
+    "order": 11,
+    "x": 800,
+    "y": 700,
+    "type": "dash",
+    "note": "Bottom of vertical stem"
+  }
+]
