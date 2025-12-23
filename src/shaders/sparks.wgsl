@@ -18,6 +18,7 @@ struct VertexOut {
   @location(2) age01: f32,
   @location(3) speed: f32,
   @location(4) sizePx: f32,
+  @location(5) life: f32,
 };
 
 fn hash11(n: f32) -> f32 {
@@ -57,7 +58,7 @@ fn sparkVertexMain(
   let pos0 = a.xy;
   let vel = a.zw;
   let spawnTime = b.x;
-  let life = max(b.y, 0.0001);
+  let life = max(b.y, 0.0001) * 10.0;
   let sizePx = b.z;
   let seedKind = b.w;
 
@@ -74,12 +75,15 @@ fn sparkVertexMain(
     return out;
   }
 
-  // Slight gravity (down is +y in UV)
-  let g = vec2<f32>(0.0, 0.16);
-  let pos = pos0 + vel * age + 0.5 * g * age * age;
+  // Gravity + drag so particles drift and settle like snow
+  let g = vec2<f32>(0.0, 0.28);
+  let drag = 2.2;
+  let damp = exp(-drag * age);
+  let velDamped = vel * damp;
+  let pos = pos0 + vel * (1.0 - damp) / drag + 0.5 * g * age * age;
 
-  let speed = length(vel);
-  let dir = select(vel / max(speed, 1e-5), vec2<f32>(1.0, 0.0), speed < 1e-5);
+  let speed = length(velDamped);
+  let dir = select(velDamped / max(speed, 1e-5), vec2<f32>(1.0, 0.0), speed < 1e-5);
   let perp = vec2<f32>(-dir.y, dir.x);
 
   let speedBoost = smoothstep(0.15, 2.8, speed);
@@ -103,6 +107,7 @@ fn sparkVertexMain(
   out.age01 = clamp(age / life, 0.0, 1.0);
   out.speed = speed;
   out.sizePx = sizePx;
+  out.life = life;
   return out;
 }
 
@@ -126,7 +131,8 @@ fn sparkFragmentMain(in: VertexOut) -> @location(0) vec4<f32> {
     return vec4<f32>(0.0);
   }
 
-  let fadeIn  = smoothstep(0.0, 0.10, in.age01);
+  let ageSeconds = in.age01 * in.life;
+  let fadeIn  = smoothstep(0.0, 0.12, ageSeconds);
   let fadeOut = 1.0 - smoothstep(0.68, 1.0, in.age01);
   let lifeFade = fadeIn * fadeOut;
 
