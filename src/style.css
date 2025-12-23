@@ -20,7 +20,8 @@ html, body {
 }
 
 #aurora-canvas,
-#game-canvas {
+#game-canvas,
+#sparkle-canvas {
   position: absolute;
   top: 0;
   left: 0;
@@ -36,6 +37,11 @@ html, body {
   z-index: 2;
   pointer-events: auto; /* Enable interaction on game layer */
   touch-action: none;
+}
+
+#sparkle-canvas {
+  z-index: 3;
+  pointer-events: none; /* Let pointer events pass through to game canvas */
 }
 
 .error-message {

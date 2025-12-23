@@ -1,7 +1,7 @@
 import type { PointerPoint } from './input';
 import { InputHandler } from './input';
 
-type PathPoint = {
+export type PathPoint = {
   x: number;
   y: number;
   time: number;
@@ -11,6 +11,8 @@ export class Game {
   private currentPath: PathPoint[] = [];
   private fadeSeconds = 3;
   private maxPoints = 600;
+  private isDrawing = false;
+  private currentMousePos = { x: 0, y: 0 };
 
   constructor(input: InputHandler) {
     input.setCallbacks({
@@ -18,6 +20,21 @@ export class Game {
       onMove: (point) => this.extendPath(point),
       onEnd: (point) => this.endPath(point),
     });
+  }
+
+  // Expose state for sparkle renderer
+  getDrawingState(): {
+    isDrawing: boolean;
+    mouseX: number;
+    mouseY: number;
+    trailPoints: PathPoint[];
+  } {
+    return {
+      isDrawing: this.isDrawing,
+      mouseX: this.currentMousePos.x,
+      mouseY: this.currentMousePos.y,
+      trailPoints: [...this.currentPath],
+    };
   }
 
   update(deltaTime: number): void {
@@ -66,14 +83,19 @@ export class Game {
   }
 
   private startPath(point: PointerPoint): void {
+    this.isDrawing = true;
+    this.currentMousePos = { x: point.x, y: point.y };
     this.currentPath = [{ x: point.x, y: point.y, time: point.time }];
   }
 
   private extendPath(point: PointerPoint): void {
+    this.currentMousePos = { x: point.x, y: point.y };
     this.currentPath.push({ x: point.x, y: point.y, time: point.time });
   }
 
   private endPath(point: PointerPoint): void {
+    this.isDrawing = false;
+    this.currentMousePos = { x: point.x, y: point.y };
     this.currentPath.push({ x: point.x, y: point.y, time: point.time });
   }
 

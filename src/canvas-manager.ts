@@ -9,7 +9,8 @@ export class CanvasManager {
 
   constructor(
     private auroraCanvas: HTMLCanvasElement,
-    private gameCanvas: HTMLCanvasElement
+    private gameCanvas: HTMLCanvasElement,
+    private sparkleCanvas?: HTMLCanvasElement
   ) {
     this.size = { width: 0, height: 0, dpr: 1 };
   }
@@ -21,6 +22,9 @@ export class CanvasManager {
 
     this.applySize(this.auroraCanvas, width, height, dpr);
     this.applySize(this.gameCanvas, width, height, dpr);
+    if (this.sparkleCanvas) {
+      this.applySize(this.sparkleCanvas, width, height, dpr);
+    }
 
     this.size = { width, height, dpr };
     return this.size;
