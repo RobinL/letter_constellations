@@ -27,6 +27,7 @@ export class SparkleRenderer {
     private mouseVelocity = { x: 0, y: 0 };
     private lastMousePos = { x: 0.5, y: 0.5 };
     private lastMouseTime = 0;
+    private mouseRamp = 0;
 
     // Trail data
     private trailPoints: TrailPoint[] = [];
@@ -183,6 +184,17 @@ export class SparkleRenderer {
         this.mousePos = { x: normalizedX, y: normalizedY };
         this.lastMouseTime = currentTime;
 
+        // Ramp in/out to avoid instant sparkle pop on mouse down
+        if (dt > 0) {
+            const rampTime = 0.8;
+            const rampStep = dt / rampTime;
+            if (active) {
+                this.mouseRamp = Math.min(1, this.mouseRamp + rampStep);
+            } else {
+                this.mouseRamp = Math.max(0, this.mouseRamp - rampStep);
+            }
+        }
+
         // Convert trail points to normalized coordinates
         this.trailPoints = trailPoints.slice(-MAX_TRAIL_POINTS).map((p) => ({
             x: p.x / (this.canvas.width / window.devicePixelRatio),
@@ -212,7 +224,7 @@ export class SparkleRenderer {
             0, // offset 4: padding for vec2 alignment
             this.canvas.width, // offset 8: resolution.x
             this.canvas.height, // offset 12: resolution.y
-            this.mouseActive ? 1.0 : 0.0, // offset 16: mouse_active
+            this.mouseRamp, // offset 16: mouse_active (ramped)
             0, // offset 20: padding for vec2 alignment
             this.mousePos.x, // offset 24: mouse_pos.x
             this.mousePos.y, // offset 28: mouse_pos.y

@@ -104,7 +104,7 @@ fn glitter(
             let flare = (1.0 - smoothstep(size * 0.25, size * 2.2, d)) * rays;
 
             // Spiky twinkle for rare bright flashes
-            let twinkleSpeed = twinkleBase + rand * 10.0;
+            let twinkleSpeed = twinkleBase + rand * 6.0;
             let tw = 0.5 + 0.5 * sin(time * twinkleSpeed + rand2 * 6.28318);
             let catchLight = pow(tw, 12.0);
 
@@ -121,10 +121,10 @@ fn glitterLayers(p: vec2<f32>, time: f32) -> f32 {
     var total = 0.0;
 
     // Multiple offset layers for richness and size variation
-    total += glitter(p, time, 240.0, 0.16, 0.12, 0.22, 3.2, 2.0);
-    total += glitter(p + vec2<f32>(0.17, 0.11), time * 1.08 + 0.7, 175.0, 0.13, 0.16, 0.28, 3.8, 1.6) * 0.9;
-    total += glitter(p + vec2<f32>(0.31, 0.23), time * 0.92 + 1.9, 120.0, 0.1, 0.22, 0.36, 4.8, 1.2) * 0.8;
-    total += glitter(p + vec2<f32>(0.41, 0.37), time * 1.22 + 2.8, 75.0, 0.08, 0.28, 0.42, 5.4, 0.9) * 0.6;
+    total += glitter(p, time * 0.7, 240.0, 0.16, 0.12, 0.22, 3.2, 1.4);
+    total += glitter(p + vec2<f32>(0.17, 0.11), time * 0.75 + 0.7, 175.0, 0.13, 0.16, 0.28, 3.8, 1.1) * 0.9;
+    total += glitter(p + vec2<f32>(0.31, 0.23), time * 0.6 + 1.9, 120.0, 0.1, 0.22, 0.36, 4.8, 0.9) * 0.8;
+    total += glitter(p + vec2<f32>(0.41, 0.37), time * 0.5 + 2.8, 75.0, 0.08, 0.28, 0.42, 5.4, 0.7) * 0.6;
 
     return min(total, 1.0);
 }
@@ -156,7 +156,7 @@ fn glitterColor(seed: f32, time: f32) -> vec3<f32> {
 // Calculate proximity to trail
 fn trailProximity(uv: vec2<f32>, aspect: f32, time: f32) -> vec2<f32> {
     var minDist = 1000.0;
-    var closestAge = 1.0;
+    var closestAge = 999.0;
 
     let trailCount = u32(uniforms.trail_count);
     let step = max(1u, trailCount / 24u);
@@ -175,7 +175,7 @@ fn trailProximity(uv: vec2<f32>, aspect: f32, time: f32) -> vec2<f32> {
 
         if (dist < minDist) {
             minDist = dist;
-            closestAge = age / 4.0;
+            closestAge = age;
         }
     }
 
@@ -191,7 +191,8 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4<f32> {
     // Get distance to trail
     let trailInfo = trailProximity(uv, aspect, time);
     let dist = trailInfo.x;
-    let age = trailInfo.y;
+    let ageSeconds = trailInfo.y;
+    let age = clamp(ageSeconds / 4.0, 0.0, 1.0);
 
     // Glitter radius - area around the path
     let radius = 0.13 * (1.0 - age * 0.4);
@@ -204,18 +205,24 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4<f32> {
     // Proximity falloff - glitter density decreases with distance
     let proximity = 1.0 - smoothstep(0.0, radius, dist);
     let ageFade = 1.0 - smoothstep(0.0, 1.0, age);
+    let fadeIn = smoothstep(0.08, 0.45, ageSeconds);
+    let cursorFade = smoothstep(0.12, 0.65, ageSeconds);
 
     // Generate glitter
     let g = glitterLayers(uv, time);
 
+    let activation = smoothstep(0.0, 1.0, clamp(uniforms.mouse_active, 0.0, 1.0));
+    let cursorActivation = pow(activation, 2.2);
+
     // Glitter only appears near the trail, fading with distance and age
-    var intensity = g * proximity * ageFade;
+    var intensity = g * proximity * ageFade * fadeIn;
     let glow = pow(g, 0.5) * proximity * ageFade * 0.35;
     intensity += glow;
     intensity = pow(intensity, 1.1);
+    intensity *= activation;
 
     // Extra glitter burst at cursor
-    if (uniforms.mouse_active > 0.5) {
+    if (activation > 0.01) {
         let cursorDiff = uv - uniforms.mouse_pos;
         let cursorCorrected = vec2<f32>(cursorDiff.x * aspect, cursorDiff.y);
         let cursorDist = length(cursorCorrected);
@@ -224,13 +231,13 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4<f32> {
 
         let cursorRadius = mix(0.09, 0.18, speedBoost);
         let cursorProximity = 1.0 - smoothstep(0.0, cursorRadius, cursorDist);
-        let cursorGlitter = glitterLayers(uv + uniforms.mouse_velocity * 0.05, time * (1.5 + speedBoost * 0.6));
-        intensity += cursorGlitter * cursorProximity * (2.1 + speedBoost * 1.8);
+        let cursorGlitter = glitterLayers(uv + uniforms.mouse_velocity * 0.05, time * (0.9 + speedBoost * 0.3));
+        intensity += cursorGlitter * cursorProximity * (2.1 + speedBoost * 1.8) * cursorActivation * cursorFade;
 
         let a = atan2(cursorCorrected.y, cursorCorrected.x);
-        let rayBurst = pow(abs(cos(a * 10.0 + time * 2.5)), 28.0);
+        let rayBurst = pow(abs(cos(a * 10.0 + time * 1.5)), 28.0);
         let burstFalloff = exp(-cursorDist * 35.0);
-        intensity += rayBurst * burstFalloff * speedBoost * 0.9;
+        intensity += rayBurst * burstFalloff * speedBoost * 0.9 * cursorActivation * cursorFade;
     }
 
     // Color with subtle variation
