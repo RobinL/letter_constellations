@@ -54,7 +54,7 @@ async function main() {
 
   // Initialize sparkle renderer
   sparkleRenderer = new SparkleRenderer(sparkleCanvas);
-  const sparkleSuccess = await sparkleRenderer.initialize();
+  const sparkleSuccess = await sparkleRenderer.initialize(renderer!.getDevice());
 
   // Call resize after initialization to ensure proper WebGPU context configuration
   resize();

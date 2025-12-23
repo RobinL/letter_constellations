@@ -192,4 +192,8 @@ export class AuroraRenderer {
             alphaMode: 'premultiplied',
         });
     }
+
+    getDevice(): GPUDevice {
+        return this.device;
+    }
 }

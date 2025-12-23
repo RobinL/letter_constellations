@@ -1,285 +1,526 @@
-// WebGPU Sparkle Renderer
-// Creates magical twinkling sparkles that follow the cursor with momentum
+// High-performance Sparkle Renderer (instanced GPU particles)
+// - No fullscreen trail-distance scan
+// - Particles spawned from cursor speed/direction + light trail twinkles
+// - GPU computes motion from time - spawnTime (no compute pass)
 
-import sparkleShaderCode from './shaders/sparkle.wgsl?raw';
+import sparkShaderCode from './shaders/sparks.wgsl?raw';
 
 export type TrailPoint = {
-    x: number;
-    y: number;
-    time: number;
+  x: number; // CSS pixels from Game
+  y: number; // CSS pixels from Game
+  time: number;
 };
 
-const MAX_TRAIL_POINTS = 64;
+const MAX_PARTICLES = 24576;
+const FLOATS_PER_PARTICLE = 8; // pos0x,pos0y, velx,vely, spawn,life, sizePx, seed
+const BYTES_PER_PARTICLE = FLOATS_PER_PARTICLE * 4;
+const MAX_SPAWNS_PER_FRAME = 1536;
+
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
 
 export class SparkleRenderer {
-    private canvas: HTMLCanvasElement;
-    private device!: GPUDevice;
-    private context!: GPUCanvasContext;
-    private pipeline!: GPURenderPipeline;
-    private uniformBuffer!: GPUBuffer;
-    private trailBuffer!: GPUBuffer;
-    private bindGroup!: GPUBindGroup;
-    private startTime: number;
+  private canvas: HTMLCanvasElement;
+  private device!: GPUDevice;
+  private context!: GPUCanvasContext;
 
-    // Mouse state
-    private mouseActive = false;
-    private mousePos = { x: 0.5, y: 0.5 };
-    private mouseVelocity = { x: 0, y: 0 };
-    private lastMousePos = { x: 0.5, y: 0.5 };
-    private lastMouseTime = 0;
-    private mouseRamp = 0;
+  private pipeline!: GPURenderPipeline;
+  private uniformBuffer!: GPUBuffer;
+  private bindGroup!: GPUBindGroup;
 
-    // Trail data
-    private trailPoints: TrailPoint[] = [];
+  private quadVertexBuffer!: GPUBuffer;
+  private particleBuffer!: GPUBuffer;
 
-    constructor(canvas: HTMLCanvasElement) {
-        this.canvas = canvas;
-        this.startTime = performance.now();
+  private startTimeMs: number;
+
+  // Uniform scratch (32 bytes = 8 floats)
+  private uniformScratch = new Float32Array(8);
+
+  // Mouse state (normalized 0..1)
+  private mouseActive = false;
+  private mouseRamp = 0;
+  private prevActive = false;
+
+  private mousePos = { x: 0.5, y: 0.5 };
+  private mouseVelocity = { x: 0, y: 0 };
+
+  private lastSimTimeSec = 0;
+
+  // Trail points from Game (CSS px)
+  private lastTrailPoints: TrailPoint[] = [];
+
+  // Particle ring buffer + batched writes (at most 2 writeBuffer calls/frame)
+  private nextParticleIndex = 0;
+  private pendingStart = 0;
+  private pendingCount = 0;
+  private pendingData = new Float32Array(MAX_SPAWNS_PER_FRAME * FLOATS_PER_PARTICLE);
+
+  // Emission accumulators
+  private sparkAccumulator = 0;
+  private dustAccumulator = 0;
+  private burstCooldown = 0;
+
+  // Fast RNG (xorshift32)
+  private rngState = 0x12345678;
+
+  constructor(canvas: HTMLCanvasElement) {
+    this.canvas = canvas;
+    this.startTimeMs = performance.now();
+  }
+
+  async initialize(existingDevice?: GPUDevice): Promise<boolean> {
+    if (existingDevice) {
+      this.device = existingDevice;
+    } else {
+      if (!navigator.gpu) {
+        console.error('WebGPU not supported');
+        return false;
+      }
+      const adapter = await navigator.gpu.requestAdapter();
+      if (!adapter) {
+        console.error('Failed to get GPU adapter');
+        return false;
+      }
+      this.device = await adapter.requestDevice();
     }
 
-    async initialize(existingDevice?: GPUDevice): Promise<boolean> {
-        // Use existing device or create new one
-        if (existingDevice) {
-            this.device = existingDevice;
+    this.context = this.canvas.getContext('webgpu') as GPUCanvasContext;
+    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+
+    this.context.configure({
+      device: this.device,
+      format: presentationFormat,
+      alphaMode: 'premultiplied',
+    });
+
+    // Uniform buffer (matches sparks.wgsl Uniforms struct; allocate 32 bytes)
+    this.uniformBuffer = this.device.createBuffer({
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    // Quad vertices (two triangles, 6 verts, vec2 each)
+    this.quadVertexBuffer = this.device.createBuffer({
+      size: 6 * 2 * 4,
+      usage: GPUBufferUsage.VERTEX,
+      mappedAtCreation: true,
+    });
+    new Float32Array(this.quadVertexBuffer.getMappedRange()).set([
+      -1, -1,
+      +1, -1,
+      -1, +1,
+      -1, +1,
+      +1, -1,
+      +1, +1,
+    ]);
+    this.quadVertexBuffer.unmap();
+
+    // Instance buffer (initialize to 0 so all particles start "dead")
+    this.particleBuffer = this.device.createBuffer({
+      size: MAX_PARTICLES * BYTES_PER_PARTICLE,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true,
+    });
+    new Float32Array(this.particleBuffer.getMappedRange()).fill(0);
+    this.particleBuffer.unmap();
+
+    const shaderModule = this.device.createShaderModule({ code: sparkShaderCode });
+
+    const bindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          buffer: { type: 'uniform' },
+        },
+      ],
+    });
+
+    this.bindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }],
+    });
+
+    const pipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout],
+    });
+
+    // Additive color blending (fireworks/glitter feel)
+    this.pipeline = this.device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'sparkVertexMain',
+        buffers: [
+          {
+            arrayStride: 2 * 4,
+            stepMode: 'vertex',
+            attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }],
+          },
+          {
+            arrayStride: BYTES_PER_PARTICLE,
+            stepMode: 'instance',
+            attributes: [
+              { shaderLocation: 1, offset: 0, format: 'float32x4' },
+              { shaderLocation: 2, offset: 16, format: 'float32x4' },
+            ],
+          },
+        ],
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'sparkFragmentMain',
+        targets: [
+          {
+            format: presentationFormat,
+            blend: {
+              color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
+              // Keep alpha compositing sane while color is additive
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
+            },
+          },
+        ],
+      },
+      primitive: { topology: 'triangle-list' },
+    });
+
+    return true;
+  }
+
+  updateMouseState(active: boolean, x: number, y: number, trailPoints: TrailPoint[]): void {
+    this.mouseActive = active;
+    this.lastTrailPoints = trailPoints;
+
+    const nowSec = (performance.now() - this.startTimeMs) / 1000;
+    const dtRaw = this.lastSimTimeSec === 0 ? 0 : nowSec - this.lastSimTimeSec;
+    const dt = Math.max(0, Math.min(0.05, dtRaw));
+    this.lastSimTimeSec = nowSec;
+
+    // Ramp in/out (prevents harsh pop)
+    if (dt > 0) {
+      const rampStep = dt / 0.45;
+      this.mouseRamp = active
+        ? Math.min(1, this.mouseRamp + rampStep)
+        : Math.max(0, this.mouseRamp - rampStep);
+    }
+
+    // Convert CSS px -> normalized UV
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const cssW = Math.max(1, this.canvas.width / dpr);
+    const cssH = Math.max(1, this.canvas.height / dpr);
+
+    const nx = Math.max(0, Math.min(1, x / cssW));
+    const ny = Math.max(0, Math.min(1, y / cssH));
+
+    const prevPos = { ...this.mousePos };
+    const curPos = { x: nx, y: ny };
+    this.mousePos = curPos;
+
+    // Velocity in UV/sec (EMA smoothed)
+    if (dt > 0) {
+      const rawVx = (curPos.x - prevPos.x) / dt;
+      const rawVy = (curPos.y - prevPos.y) / dt;
+      this.mouseVelocity.x = this.mouseVelocity.x * 0.7 + rawVx * 0.3;
+      this.mouseVelocity.y = this.mouseVelocity.y * 0.7 + rawVy * 0.3;
+    }
+
+    const speed = Math.hypot(this.mouseVelocity.x, this.mouseVelocity.y);
+    const speedBoost = smoothstep(0.08, 2.4, speed);
+
+    // Bursts on press + occasional flick bursts
+    if (active && !this.prevActive) {
+      this.emitRadialBurst(nowSec, curPos, dpr, 300);
+      this.burstCooldown = 0.12;
+    }
+
+    if (dt > 0) {
+      this.burstCooldown = Math.max(0, this.burstCooldown - dt);
+      if (active && this.burstCooldown <= 0 && speedBoost > 0.85 && this.mouseRamp > 0.25) {
+        this.emitDirectionalBurst(nowSec, curPos, dpr, 110);
+        this.burstCooldown = 0.12;
+      }
+    }
+
+    // Continuous directional emission
+    if (dt > 0) {
+      const rate = (120 + speedBoost * 1700) * this.mouseRamp; // sparks/sec
+      this.sparkAccumulator += rate * dt;
+
+      let emitCount = Math.floor(this.sparkAccumulator);
+      this.sparkAccumulator -= emitCount;
+      emitCount = Math.min(emitCount, 180);
+
+      if (emitCount > 0) {
+        // Direction basis from cursor velocity
+        let dirX = this.mouseVelocity.x;
+        let dirY = this.mouseVelocity.y;
+        const dirLen = Math.hypot(dirX, dirY);
+        if (dirLen > 1e-5) {
+          dirX /= dirLen;
+          dirY /= dirLen;
         } else {
-            if (!navigator.gpu) {
-                console.error('WebGPU not supported');
-                return false;
-            }
-
-            const adapter = await navigator.gpu.requestAdapter();
-            if (!adapter) {
-                console.error('Failed to get GPU adapter');
-                return false;
-            }
-
-            this.device = await adapter.requestDevice();
+          // fallback direction if barely moving
+          const a = this.rand01() * Math.PI * 2;
+          dirX = Math.cos(a);
+          dirY = Math.sin(a);
         }
+        const perpX = -dirY;
+        const perpY = dirX;
 
-        // Configure canvas context with alpha for compositing
-        this.context = this.canvas.getContext('webgpu') as GPUCanvasContext;
-        const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+        // Narrower cone at high speed
+        const cone = (1.25 - speedBoost * 0.9);
 
-        this.context.configure({
-            device: this.device,
-            format: presentationFormat,
-            alphaMode: 'premultiplied',
-        });
+        for (let i = 0; i < emitCount; i++) {
+          const u = this.rand01();
+          const px = prevPos.x + (curPos.x - prevPos.x) * u;
+          const py = prevPos.y + (curPos.y - prevPos.y) * u;
 
-        // Create uniform buffer
-        // Struct layout:
-        // time: f32 (4) + padding (4) + resolution: vec2<f32> (8) +
-        // mouse_active: f32 (4) + padding (4) + mouse_pos: vec2<f32> (8) +
-        // mouse_velocity: vec2<f32> (8) + trail_count: f32 (4) + _padding: f32 (4)
-        // Total: 48 bytes (aligned to 16)
-        this.uniformBuffer = this.device.createBuffer({
-            size: 48,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
+          const jitter = (this.rand01() - 0.5) * 0.01;
+          const jx = perpX * jitter;
+          const jy = perpY * jitter;
 
-        // Create trail buffer (storage buffer for trail points)
-        // Each point: pos (vec2: 8) + time (f32: 4) + padding (4) = 16 bytes
-        const trailBufferSize = MAX_TRAIL_POINTS * 16;
-        this.trailBuffer = this.device.createBuffer({
-            size: trailBufferSize,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-        });
+          const angleOff = (this.rand01() - 0.5) * cone;
+          const ca = Math.cos(angleOff);
+          const sa = Math.sin(angleOff);
 
-        // Create shader module
-        const shaderModule = this.device.createShaderModule({
-            code: sparkleShaderCode,
-        });
+          const rx = dirX * ca - dirY * sa;
+          const ry = dirX * sa + dirY * ca;
 
-        // Create bind group layout
-        const bindGroupLayout = this.device.createBindGroupLayout({
-            entries: [
-                {
-                    binding: 0,
-                    visibility: GPUShaderStage.FRAGMENT,
-                    buffer: { type: 'uniform' },
-                },
-                {
-                    binding: 1,
-                    visibility: GPUShaderStage.FRAGMENT,
-                    buffer: { type: 'read-only-storage' },
-                },
-            ],
-        });
+          const vMag = 0.1 + this.rand01() * 0.2 + speedBoost * 0.75;
+          const side = (this.rand01() - 0.5) * (0.36 - speedBoost * 0.18);
+          const vx = rx * vMag + perpX * side * vMag;
+          const vy = ry * vMag + perpY * side * vMag;
 
-        // Create bind group
-        this.bindGroup = this.device.createBindGroup({
-            layout: bindGroupLayout,
-            entries: [
-                { binding: 0, resource: { buffer: this.uniformBuffer } },
-                { binding: 1, resource: { buffer: this.trailBuffer } },
-            ],
-        });
+          const life = 0.24 + this.rand01() * 0.45 + speedBoost * 0.22;
+          const sizeCss = 1.6 + this.rand01() * 3.8 + speedBoost * 9.0;
+          const sizePx = sizeCss * dpr;
 
-        // Create pipeline layout
-        const pipelineLayout = this.device.createPipelineLayout({
-            bindGroupLayouts: [bindGroupLayout],
-        });
-
-        // Create render pipeline with alpha blending
-        this.pipeline = this.device.createRenderPipeline({
-            layout: pipelineLayout,
-            vertex: {
-                module: shaderModule,
-                entryPoint: 'vertexMain',
-            },
-            fragment: {
-                module: shaderModule,
-                entryPoint: 'fragmentMain',
-                targets: [
-                    {
-                        format: presentationFormat,
-                        blend: {
-                            color: {
-                                srcFactor: 'one',
-                                dstFactor: 'one-minus-src-alpha',
-                                operation: 'add',
-                            },
-                            alpha: {
-                                srcFactor: 'one',
-                                dstFactor: 'one-minus-src-alpha',
-                                operation: 'add',
-                            },
-                        },
-                    },
-                ],
-            },
-            primitive: {
-                topology: 'triangle-list',
-            },
-        });
-
-        return true;
+          this.queueParticle(px + jx, py + jy, vx, vy, nowSec, life, sizePx, this.rand01());
+        }
+      }
     }
 
-    // Update mouse state from game input
-    updateMouseState(
-        active: boolean,
-        x: number,
-        y: number,
-        trailPoints: TrailPoint[]
-    ): void {
-        const currentTime = performance.now() / 1000;
+    // Trail twinkles (very cheap, makes letters sparkle even when stopped)
+    if (dt > 0 && trailPoints.length > 0) {
+      const trailStrength = Math.min(1, trailPoints.length / 160);
+      const base = 45 + 160 * trailStrength;
+      const rate = base * (0.25 + 0.75 * this.mouseRamp); // dust/sec
+      this.dustAccumulator += rate * dt;
 
-        // Convert coordinates to normalized UV space (0-1)
-        const normalizedX = x / (this.canvas.width / window.devicePixelRatio);
-        const normalizedY = y / (this.canvas.height / window.devicePixelRatio);
+      let dustCount = Math.floor(this.dustAccumulator);
+      this.dustAccumulator -= dustCount;
+      dustCount = Math.min(dustCount, 60);
 
-        // Calculate velocity
-        const dt = currentTime - this.lastMouseTime;
-        if (dt > 0 && dt < 0.1) {
-            // Smooth velocity with exponential moving average
-            const newVelX = (normalizedX - this.lastMousePos.x) / dt;
-            const newVelY = (normalizedY - this.lastMousePos.y) / dt;
-            this.mouseVelocity.x = this.mouseVelocity.x * 0.7 + newVelX * 0.3;
-            this.mouseVelocity.y = this.mouseVelocity.y * 0.7 + newVelY * 0.3;
-        }
+      for (let i = 0; i < dustCount; i++) {
+        const p = trailPoints[(this.rand01() * trailPoints.length) | 0];
+        const tx = Math.max(0, Math.min(1, p.x / cssW));
+        const ty = Math.max(0, Math.min(1, p.y / cssH));
 
-        this.mouseActive = active;
-        this.lastMousePos = { ...this.mousePos };
-        this.mousePos = { x: normalizedX, y: normalizedY };
-        this.lastMouseTime = currentTime;
+        const a = this.rand01() * Math.PI * 2;
+        const drift = 0.014 + this.rand01() * 0.03;
+        const vx = Math.cos(a) * drift;
+        const vy = Math.sin(a) * drift;
 
-        // Ramp in/out to avoid instant sparkle pop on mouse down
-        if (dt > 0) {
-            const rampTime = 0.8;
-            const rampStep = dt / rampTime;
-            if (active) {
-                this.mouseRamp = Math.min(1, this.mouseRamp + rampStep);
-            } else {
-                this.mouseRamp = Math.max(0, this.mouseRamp - rampStep);
-            }
-        }
+        const life = 0.45 + this.rand01() * 1.2;
+        const sizeCss = 0.9 + this.rand01() * 2.8;
+        const sizePx = sizeCss * dpr;
 
-        // Convert trail points to normalized coordinates
-        this.trailPoints = trailPoints.slice(-MAX_TRAIL_POINTS).map((p) => ({
-            x: p.x / (this.canvas.width / window.devicePixelRatio),
-            y: p.y / (this.canvas.height / window.devicePixelRatio),
-            time: p.time,
-        }));
-
-        // Apply velocity decay when not active
-        if (!active) {
-            this.mouseVelocity.x *= 0.95;
-            this.mouseVelocity.y *= 0.95;
-        }
+        this.queueParticle(tx, ty, vx, vy, nowSec, life, sizePx, this.rand01());
+      }
     }
 
-    render(): void {
-        const time = (performance.now() - this.startTime) / 1000;
-
-        // Convert trail times to be relative to our startTime (same time base as shader)
-        const adjustedTrailPoints = this.trailPoints.map((p) => ({
-            ...p,
-            time: p.time - this.startTime / 1000,
-        }));
-
-        // Update uniform buffer
-        const uniformData = new Float32Array([
-            time, // offset 0: time
-            0, // offset 4: padding for vec2 alignment
-            this.canvas.width, // offset 8: resolution.x
-            this.canvas.height, // offset 12: resolution.y
-            this.mouseRamp, // offset 16: mouse_active (ramped)
-            0, // offset 20: padding for vec2 alignment
-            this.mousePos.x, // offset 24: mouse_pos.x
-            this.mousePos.y, // offset 28: mouse_pos.y
-            this.mouseVelocity.x, // offset 32: mouse_velocity.x
-            this.mouseVelocity.y, // offset 36: mouse_velocity.y
-            adjustedTrailPoints.length, // offset 40: trail_count
-            0, // offset 44: _padding
-        ]);
-        this.device.queue.writeBuffer(this.uniformBuffer, 0, uniformData);
-
-        // Update trail buffer
-        const trailData = new Float32Array(MAX_TRAIL_POINTS * 4);
-        for (let i = 0; i < adjustedTrailPoints.length; i++) {
-            const point = adjustedTrailPoints[i];
-            trailData[i * 4 + 0] = point.x;
-            trailData[i * 4 + 1] = point.y;
-            trailData[i * 4 + 2] = point.time;
-            trailData[i * 4 + 3] = 0; // padding
-        }
-        this.device.queue.writeBuffer(this.trailBuffer, 0, trailData);
-
-        // Create command encoder
-        const commandEncoder = this.device.createCommandEncoder();
-
-        // Begin render pass
-        const renderPass = commandEncoder.beginRenderPass({
-            colorAttachments: [
-                {
-                    view: this.context.getCurrentTexture().createView(),
-                    clearValue: { r: 0, g: 0, b: 0, a: 0 },
-                    loadOp: 'clear',
-                    storeOp: 'store',
-                },
-            ],
-        });
-
-        renderPass.setPipeline(this.pipeline);
-        renderPass.setBindGroup(0, this.bindGroup);
-        renderPass.draw(3);
-        renderPass.end();
-
-        // Submit commands
-        this.device.queue.submit([commandEncoder.finish()]);
+    // Decay velocity when not drawing
+    if (!active) {
+      this.mouseVelocity.x *= 0.95;
+      this.mouseVelocity.y *= 0.95;
     }
 
-    resize(width: number, height: number): void {
-        this.canvas.width = width;
-        this.canvas.height = height;
+    this.prevActive = active;
+  }
 
-        // Reconfigure WebGPU context
-        const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-        this.context.configure({
-            device: this.device,
-            format: presentationFormat,
-            alphaMode: 'premultiplied',
-        });
+  render(): void {
+    const timeSec = (performance.now() - this.startTimeMs) / 1000;
+
+    // Flush pending particle spawns (<= 2 writeBuffer calls)
+    this.flushPendingParticles();
+
+    // Update uniforms (must match sparks.wgsl layout)
+    this.uniformScratch[0] = timeSec;
+    this.uniformScratch[1] = 0;
+    this.uniformScratch[2] = this.canvas.width;
+    this.uniformScratch[3] = this.canvas.height;
+    this.uniformScratch[4] = this.mouseRamp;
+    this.uniformScratch[5] = 0;
+    this.uniformScratch[6] = 0;
+    this.uniformScratch[7] = 0;
+    this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformScratch);
+
+    const commandEncoder = this.device.createCommandEncoder();
+
+    const pass = commandEncoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: this.context.getCurrentTexture().createView(),
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          loadOp: 'clear',
+          storeOp: 'store',
+        },
+      ],
+    });
+
+    pass.setPipeline(this.pipeline);
+    pass.setBindGroup(0, this.bindGroup);
+    pass.setVertexBuffer(0, this.quadVertexBuffer);
+    pass.setVertexBuffer(1, this.particleBuffer);
+    pass.draw(6, MAX_PARTICLES, 0, 0);
+    pass.end();
+
+    this.device.queue.submit([commandEncoder.finish()]);
+  }
+
+  resize(width: number, height: number): void {
+    this.canvas.width = width;
+    this.canvas.height = height;
+
+    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    this.context.configure({
+      device: this.device,
+      format: presentationFormat,
+      alphaMode: 'premultiplied',
+    });
+  }
+
+  // -------- internals --------
+
+  private rand01(): number {
+    // xorshift32
+    let x = this.rngState | 0;
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    this.rngState = x;
+    return ((x >>> 0) / 4294967296);
+  }
+
+  private queueParticle(
+    posX: number,
+    posY: number,
+    velX: number,
+    velY: number,
+    spawnTime: number,
+    life: number,
+    sizePx: number,
+    seed: number
+  ): void {
+    if (this.pendingCount >= MAX_SPAWNS_PER_FRAME) return;
+
+    if (this.pendingCount === 0) {
+      this.pendingStart = this.nextParticleIndex;
     }
+
+    this.nextParticleIndex = (this.nextParticleIndex + 1) % MAX_PARTICLES;
+
+    const base = this.pendingCount * FLOATS_PER_PARTICLE;
+    const a = this.pendingData;
+    a[base + 0] = posX;
+    a[base + 1] = posY;
+    a[base + 2] = velX;
+    a[base + 3] = velY;
+    a[base + 4] = spawnTime;
+    a[base + 5] = life;
+    a[base + 6] = sizePx;
+    a[base + 7] = seed;
+
+    this.pendingCount++;
+  }
+
+  private flushPendingParticles(): void {
+    if (this.pendingCount === 0) return;
+
+    const total = this.pendingCount;
+    const start = this.pendingStart;
+
+    const firstLen = Math.min(total, MAX_PARTICLES - start);
+    const firstFloats = firstLen * FLOATS_PER_PARTICLE;
+
+    this.device.queue.writeBuffer(
+      this.particleBuffer,
+      start * BYTES_PER_PARTICLE,
+      this.pendingData.subarray(0, firstFloats)
+    );
+
+    if (total > firstLen) {
+      const secondLen = total - firstLen;
+      const secondFloats = secondLen * FLOATS_PER_PARTICLE;
+
+      this.device.queue.writeBuffer(
+        this.particleBuffer,
+        0,
+        this.pendingData.subarray(firstFloats, firstFloats + secondFloats)
+      );
+    }
+
+    this.pendingCount = 0;
+  }
+
+  private emitRadialBurst(nowSec: number, pos: { x: number; y: number }, dpr: number, count: number): void {
+    const n = Math.min(count, MAX_SPAWNS_PER_FRAME);
+
+    for (let i = 0; i < n; i++) {
+      const a = this.rand01() * Math.PI * 2;
+      const v = 0.14 + this.rand01() * 0.8;
+      const vx = Math.cos(a) * v;
+      const vy = Math.sin(a) * v;
+
+      const life = 0.32 + this.rand01() * 0.75;
+      const sizeCss = 2.2 + this.rand01() * 7.0;
+      const sizePx = sizeCss * dpr;
+
+      this.queueParticle(pos.x, pos.y, vx, vy, nowSec, life, sizePx, this.rand01());
+    }
+  }
+
+  private emitDirectionalBurst(nowSec: number, pos: { x: number; y: number }, dpr: number, count: number): void {
+    let dx = this.mouseVelocity.x;
+    let dy = this.mouseVelocity.y;
+    const len = Math.hypot(dx, dy);
+    if (len > 1e-5) {
+      dx /= len;
+      dy /= len;
+    } else {
+      dx = 1;
+      dy = 0;
+    }
+    const px = -dy;
+    const py = dx;
+
+    const n = Math.min(count, MAX_SPAWNS_PER_FRAME);
+
+    for (let i = 0; i < n; i++) {
+      const cone = 0.35;
+      const off = (this.rand01() - 0.5) * cone;
+      const ca = Math.cos(off);
+      const sa = Math.sin(off);
+      const rx = dx * ca - dy * sa;
+      const ry = dx * sa + dy * ca;
+
+      const v = 0.17 + this.rand01() * 1.0;
+      const side = (this.rand01() - 0.5) * 0.25;
+
+      const vx = rx * v + px * side;
+      const vy = ry * v + py * side;
+
+      const life = 0.28 + this.rand01() * 0.6;
+      const sizeCss = 2.0 + this.rand01() * 8.5;
+      const sizePx = sizeCss * dpr;
+
+      this.queueParticle(pos.x, pos.y, vx, vy, nowSec, life, sizePx, this.rand01());
+    }
+  }
 }
