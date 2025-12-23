@@ -3,6 +3,7 @@
 
 import auroraShaderCode from './shaders/aurora.wgsl?raw';
 import backgroundUrl from './assets/background.png';
+import { loadImageBitmap } from './assets';
 
 export class AuroraRenderer {
     private canvas: HTMLCanvasElement;
@@ -44,19 +45,21 @@ export class AuroraRenderer {
         });
 
         // Load background texture
-        const backgroundTexture = await this.loadTexture(backgroundUrl);
+        const backgroundImage = await loadImageBitmap(backgroundUrl);
+        const backgroundTexture = this.createTextureFromImage(backgroundImage);
 
-        // Create sampler
+        // Create sampler (no mipmaps needed for fullscreen background)
         const sampler = this.device.createSampler({
             magFilter: 'linear',
             minFilter: 'linear',
-            mipmapFilter: 'linear',
         });
 
-        // Create uniform buffer (time, resolution, padding - with proper alignment)
-        // WGSL alignment: time(4) + pad(4) + resolution(8) + padding(4) + struct_pad(4) = 24 bytes
+        // Create uniform buffer with proper WGSL struct alignment:
+        // struct Uniforms { time: f32, resolution: vec2<f32>, _padding: f32 }
+        // Memory layout: time(4) + pad(4) + resolution.x(4) + resolution.y(4) + _padding(4) + struct_pad(12) = 32 bytes
+        // (structs are 16-byte aligned, vec2 requires 8-byte alignment)
         this.uniformBuffer = this.device.createBuffer({
-            size: 32, // Must be multiple of 16 and accommodate alignment
+            size: 32,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
@@ -121,11 +124,7 @@ export class AuroraRenderer {
         return true;
     }
 
-    private async loadTexture(url: string): Promise<GPUTexture> {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const imageBitmap = await createImageBitmap(blob);
-
+    private createTextureFromImage(imageBitmap: ImageBitmap): GPUTexture {
         const texture = this.device.createTexture({
             size: [imageBitmap.width, imageBitmap.height, 1],
             format: 'rgba8unorm',
@@ -145,18 +144,15 @@ export class AuroraRenderer {
     }
 
     render(): void {
-        // Update uniforms with proper WGSL alignment
-        // Layout: time(f32) at 0, padding at 4, resolution(vec2) at 8, _padding(f32) at 16
+        // Update uniforms - must match WGSL struct layout
         const time = (performance.now() - this.startTime) / 1000;
         const uniformData = new Float32Array([
-            time,           // offset 0: time
-            0,              // offset 4: padding for vec2 alignment
+            time,               // offset 0: time
+            0,                  // offset 4: padding (vec2 needs 8-byte alignment)
             this.canvas.width,  // offset 8: resolution.x
             this.canvas.height, // offset 12: resolution.y
-            0,              // offset 16: _padding
-            0,              // offset 20: struct padding
-            0,              // offset 24: struct padding
-            0,              // offset 28: struct padding
+            0,                  // offset 16: _padding
+            0, 0, 0,           // offset 20-28: struct padding to 32 bytes
         ]);
         this.device.queue.writeBuffer(this.uniformBuffer, 0, uniformData);
 
@@ -187,5 +183,13 @@ export class AuroraRenderer {
     resize(width: number, height: number): void {
         this.canvas.width = width;
         this.canvas.height = height;
+
+        // Reconfigure WebGPU context with new drawable size
+        const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+        this.context.configure({
+            device: this.device,
+            format: presentationFormat,
+            alphaMode: 'premultiplied',
+        });
     }
 }

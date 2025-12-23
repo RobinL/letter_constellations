@@ -1,25 +1,49 @@
 import './style.css';
 import { AuroraRenderer } from './aurora-renderer';
+import { CanvasManager } from './canvas-manager';
+import { Game } from './game';
+import { InputHandler } from './input';
 
 async function main() {
-  // Create fullscreen canvas
-  const canvas = document.createElement('canvas');
-  canvas.id = 'aurora-canvas';
-  document.body.appendChild(canvas);
+  const app = document.querySelector<HTMLDivElement>('#app')!;
 
-  // Set canvas size to window size
+  // Create fullscreen aurora canvas (WebGPU background)
+  const auroraCanvas = document.createElement('canvas');
+  auroraCanvas.id = 'aurora-canvas';
+  app.appendChild(auroraCanvas);
+
+  // Create overlay canvas for game interactions (2D)
+  const gameCanvas = document.createElement('canvas');
+  gameCanvas.id = 'game-canvas';
+  app.appendChild(gameCanvas);
+
+  // Set canvas sizes to window size with device pixel ratio
+  let renderer: AuroraRenderer | null = null;
+  const canvasManager = new CanvasManager(auroraCanvas, gameCanvas);
+  const gameContext = gameCanvas.getContext('2d');
+
+  if (!gameContext) {
+    throw new Error('Failed to get 2D context for game canvas.');
+  }
+
   const resize = () => {
-    canvas.width = window.innerWidth * window.devicePixelRatio;
-    canvas.height = window.innerHeight * window.devicePixelRatio;
-    canvas.style.width = `${window.innerWidth}px`;
-    canvas.style.height = `${window.innerHeight}px`;
+    const { width, height, dpr } = canvasManager.resize();
+    canvasManager.configureGameContext(gameContext);
+
+    // Update renderer with new size (if initialized)
+    if (renderer) {
+      renderer.resize(width * dpr, height * dpr);
+    }
   };
   resize();
   window.addEventListener('resize', resize);
 
   // Initialize renderer
-  const renderer = new AuroraRenderer(canvas);
+  renderer = new AuroraRenderer(auroraCanvas);
   const success = await renderer.initialize();
+
+  // Call resize after initialization to ensure proper WebGPU context configuration
+  resize();
 
   if (!success) {
     // Show error message if WebGPU not available
@@ -34,12 +58,27 @@ async function main() {
     return;
   }
 
-  // Animation loop
-  function animate() {
+  const input = new InputHandler(gameCanvas, (event) =>
+    canvasManager.getPointFromEvent(gameCanvas, event)
+  );
+  const game = new Game(input);
+
+  // Main animation loop
+  let lastTime = performance.now();
+  function animate(currentTime: number) {
+    const deltaTime = (currentTime - lastTime) / 1000; // seconds
+    lastTime = currentTime;
+
+    game.update(deltaTime);
+
+    // Render aurora background
     renderer.render();
+
+    game.render(gameContext);
+
     requestAnimationFrame(animate);
   }
-  animate();
+  animate(performance.now());
 }
 
 main();

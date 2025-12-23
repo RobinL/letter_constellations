@@ -11,12 +11,31 @@ html, body {
   background: #000;
 }
 
-#aurora-canvas {
+#app {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+}
+
+#aurora-canvas,
+#game-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#aurora-canvas {
+  z-index: 1;
+}
+
+#game-canvas {
+  z-index: 2;
+  pointer-events: auto; /* Enable interaction on game layer */
+  touch-action: none;
 }
 
 .error-message {
