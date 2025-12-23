@@ -26,6 +26,7 @@ async function main() {
   // Set canvas sizes to window size with device pixel ratio
   let renderer: AuroraRenderer | null = null;
   let sparkleRenderer: SparkleRenderer | null = null;
+  let game: Game | null = null;
   const canvasManager = new CanvasManager(auroraCanvas, gameCanvas, sparkleCanvas);
   const gameContext = gameCanvas.getContext('2d');
 
@@ -36,6 +37,9 @@ async function main() {
   const resize = () => {
     const { width, height, dpr } = canvasManager.resize();
     canvasManager.configureGameContext(gameContext);
+    if (game) {
+      game.setViewportSize(width, height);
+    }
 
     // Update renderers with new size (if initialized)
     if (renderer) {
@@ -75,7 +79,9 @@ async function main() {
   const input = new InputHandler(gameCanvas, (event) =>
     canvasManager.getPointFromEvent(gameCanvas, event)
   );
-  const game = new Game(input);
+  game = new Game(input);
+  const size = canvasManager.getSize();
+  game.setViewportSize(size.width, size.height);
 
   // Main animation loop
   let lastTime = performance.now();
@@ -93,6 +99,9 @@ async function main() {
       drawingState.mouseY,
       drawingState.trailPoints
     );
+
+    const dotState = game.getDotState();
+    sparkleRenderer.setDots(dotState.dots, dotState.currentIndex, dotState.radius);
 
     // Render aurora background
     renderer.render();

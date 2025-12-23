@@ -81,6 +81,55 @@ export class Game {
     };
   }
 
+  getDotState(): {
+    dots: PlotPoint[];
+    currentIndex: number;
+    radius: number;
+  } {
+    return {
+      dots: this.scaledPlotPoints,
+      currentIndex: this.currentTargetIndex,
+      radius: this.dotRadius,
+    };
+  }
+
+  setViewportSize(width: number, height: number): void {
+    if (plotPoints.length === 0) {
+      return;
+    }
+
+    const viewportWidth = Math.max(1, width);
+    const viewportHeight = Math.max(1, height);
+
+    if (
+      viewportWidth === this.lastPlotSize.width &&
+      viewportHeight === this.lastPlotSize.height
+    ) {
+      return;
+    }
+
+    const boundsWidth = this.plotBounds.maxX - this.plotBounds.minX;
+    const boundsHeight = this.plotBounds.maxY - this.plotBounds.minY;
+    if (boundsWidth <= 0 || boundsHeight <= 0) {
+      return;
+    }
+
+    const targetWidth = viewportWidth * 0.5;
+    const targetHeight = viewportHeight * 0.5;
+    const scale = Math.min(targetWidth / boundsWidth, targetHeight / boundsHeight);
+    const offsetX =
+      (viewportWidth - boundsWidth * scale) / 2 - this.plotBounds.minX * scale;
+    const offsetY =
+      (viewportHeight - boundsHeight * scale) / 2 - this.plotBounds.minY * scale;
+
+    this.scaledPlotPoints = plotPoints.map((point) => ({
+      order: point.order,
+      x: point.x * scale + offsetX,
+      y: point.y * scale + offsetY,
+    }));
+    this.lastPlotSize = { width: viewportWidth, height: viewportHeight };
+  }
+
   update(deltaTime: number): void {
     void deltaTime;
     if (this.currentPath.length === 0) {
@@ -102,9 +151,7 @@ export class Game {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.restore();
 
-    this.updateScaledPlotPoints(ctx);
     this.renderPlotLines(ctx);
-    this.renderPlotPoints(ctx);
 
     if (this.currentPath.length === 0) {
       return;
@@ -157,59 +204,6 @@ export class Game {
     ctx.fill();
   }
 
-  private updateScaledPlotPoints(ctx: CanvasRenderingContext2D): void {
-    if (plotPoints.length === 0) {
-      return;
-    }
-
-    const transform = ctx.getTransform();
-    const dpr = transform.a || 1;
-    const viewportWidth = Math.max(1, ctx.canvas.width / dpr);
-    const viewportHeight = Math.max(1, ctx.canvas.height / dpr);
-
-    if (
-      viewportWidth === this.lastPlotSize.width &&
-      viewportHeight === this.lastPlotSize.height
-    ) {
-      return;
-    }
-
-    const boundsWidth = this.plotBounds.maxX - this.plotBounds.minX;
-    const boundsHeight = this.plotBounds.maxY - this.plotBounds.minY;
-    if (boundsWidth <= 0 || boundsHeight <= 0) {
-      return;
-    }
-
-    const targetWidth = viewportWidth * 0.5;
-    const targetHeight = viewportHeight * 0.5;
-    const scale = Math.min(targetWidth / boundsWidth, targetHeight / boundsHeight);
-    const offsetX =
-      (viewportWidth - boundsWidth * scale) / 2 - this.plotBounds.minX * scale;
-    const offsetY =
-      (viewportHeight - boundsHeight * scale) / 2 - this.plotBounds.minY * scale;
-
-    this.scaledPlotPoints = plotPoints.map((point) => ({
-      order: point.order,
-      x: point.x * scale + offsetX,
-      y: point.y * scale + offsetY,
-    }));
-    this.lastPlotSize = { width: viewportWidth, height: viewportHeight };
-  }
-
-  private renderPlotPoints(ctx: CanvasRenderingContext2D): void {
-    if (this.scaledPlotPoints.length === 0) {
-      return;
-    }
-
-    for (let index = 0; index < this.scaledPlotPoints.length; index += 1) {
-      const point = this.scaledPlotPoints[index];
-      ctx.fillStyle = this.getDotColor(index);
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, this.dotRadius, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
   private renderPlotLines(ctx: CanvasRenderingContext2D): void {
     if (this.scaledPlotPoints.length < 2) {
       return;
@@ -229,16 +223,6 @@ export class Game {
       }
     });
     ctx.stroke();
-  }
-
-  private getDotColor(index: number): string {
-    if (index < this.currentTargetIndex) {
-      return 'rgb(60, 220, 120)';
-    }
-    if (index === this.currentTargetIndex) {
-      return 'rgb(255, 160, 30)';
-    }
-    return 'rgb(220, 60, 60)';
   }
 
   private tryAdvanceTarget(point: PointerPoint): void {

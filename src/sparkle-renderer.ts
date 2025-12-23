@@ -3,6 +3,7 @@
 // - Particles spawned from cursor speed/direction + light trail twinkles
 // - GPU computes motion from time - spawnTime (no compute pass)
 
+import dotShaderCode from './shaders/dots.wgsl?raw';
 import sparkShaderCode from './shaders/sparks.wgsl?raw';
 
 export type TrailPoint = {
@@ -15,6 +16,9 @@ const MAX_PARTICLES = 24576;
 const FLOATS_PER_PARTICLE = 8; // pos0x,pos0y, velx,vely, spawn,life, sizePx, seed
 const BYTES_PER_PARTICLE = FLOATS_PER_PARTICLE * 4;
 const MAX_SPAWNS_PER_FRAME = 1536;
+const MAX_DOTS = 512;
+const FLOATS_PER_DOT = 8; // posx,posy,sizePx,state, seed,...
+const BYTES_PER_DOT = FLOATS_PER_DOT * 4;
 const KIND_DUST = 0;
 const KIND_SPARK = 1;
 const KIND_STAR = 2;
@@ -31,16 +35,21 @@ export class SparkleRenderer {
   private context!: GPUCanvasContext;
 
   private pipeline!: GPURenderPipeline;
+  private dotPipeline!: GPURenderPipeline;
   private uniformBuffer!: GPUBuffer;
+  private dotUniformBuffer!: GPUBuffer;
   private bindGroup!: GPUBindGroup;
+  private dotBindGroup!: GPUBindGroup;
 
   private quadVertexBuffer!: GPUBuffer;
   private particleBuffer!: GPUBuffer;
+  private dotBuffer!: GPUBuffer;
 
   private startTimeMs: number;
 
   // Uniform scratch (32 bytes = 8 floats)
   private uniformScratch = new Float32Array(8);
+  private dotUniformScratch = new Float32Array(8);
 
   // Mouse state (normalized 0..1)
   private mouseActive = false;
@@ -54,6 +63,10 @@ export class SparkleRenderer {
 
   // Trail points from Game (CSS px)
   private lastTrailPoints: TrailPoint[] = [];
+
+  // Dot rendering state
+  private dotCount = 0;
+  private dotScratch = new Float32Array(MAX_DOTS * FLOATS_PER_DOT);
 
   // Particle ring buffer + batched writes (at most 2 writeBuffer calls/frame)
   private nextParticleIndex = 0;
@@ -109,6 +122,11 @@ export class SparkleRenderer {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
+    this.dotUniformBuffer = this.device.createBuffer({
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
     // Quad vertices (two triangles, 6 verts, vec2 each)
     this.quadVertexBuffer = this.device.createBuffer({
       size: 6 * 2 * 4,
@@ -134,6 +152,15 @@ export class SparkleRenderer {
     new Float32Array(this.particleBuffer.getMappedRange()).fill(0);
     this.particleBuffer.unmap();
 
+    this.dotBuffer = this.device.createBuffer({
+      size: MAX_DOTS * BYTES_PER_DOT,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      mappedAtCreation: true,
+    });
+    new Float32Array(this.dotBuffer.getMappedRange()).fill(0);
+    this.dotBuffer.unmap();
+
+    const dotShaderModule = this.device.createShaderModule({ code: dotShaderCode });
     const shaderModule = this.device.createShaderModule({ code: sparkShaderCode });
 
     const bindGroupLayout = this.device.createBindGroupLayout({
@@ -149,6 +176,11 @@ export class SparkleRenderer {
     this.bindGroup = this.device.createBindGroup({
       layout: bindGroupLayout,
       entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }],
+    });
+
+    this.dotBindGroup = this.device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [{ binding: 0, resource: { buffer: this.dotUniformBuffer } }],
     });
 
     const pipelineLayout = this.device.createPipelineLayout({
@@ -198,7 +230,95 @@ export class SparkleRenderer {
       primitive: { topology: 'triangle-list' },
     });
 
+    this.dotPipeline = this.device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: dotShaderModule,
+        entryPoint: 'dotVertexMain',
+        buffers: [
+          {
+            arrayStride: 2 * 4,
+            stepMode: 'vertex',
+            attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }],
+          },
+          {
+            arrayStride: BYTES_PER_DOT,
+            stepMode: 'instance',
+            attributes: [
+              { shaderLocation: 1, offset: 0, format: 'float32x4' },
+              { shaderLocation: 2, offset: 16, format: 'float32x4' },
+            ],
+          },
+        ],
+      },
+      fragment: {
+        module: dotShaderModule,
+        entryPoint: 'dotFragmentMain',
+        targets: [
+          {
+            format: presentationFormat,
+            blend: {
+              color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
+            },
+          },
+        ],
+      },
+      primitive: { topology: 'triangle-list' },
+    });
+
     return true;
+  }
+
+  setDots(dots: Array<{ x: number; y: number }>, currentIndex: number, radius: number): void {
+    const count = Math.min(dots.length, MAX_DOTS);
+    this.dotCount = count;
+    if (count === 0) {
+      return;
+    }
+
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const cssW = Math.max(1, this.canvas.width / dpr);
+    const cssH = Math.max(1, this.canvas.height / dpr);
+
+    const baseRadius = Math.max(6, radius);
+
+    for (let i = 0; i < count; i += 1) {
+      const dot = dots[i];
+      const nx = dot.x / cssW;
+      const ny = dot.y / cssH;
+
+      let state = 0;
+      if (i < currentIndex) {
+        state = 2;
+      } else if (i === currentIndex) {
+        state = 1;
+      }
+
+      const sizeCss =
+        state === 1 ? baseRadius * 1.25 : state === 2 ? baseRadius * 1.05 : baseRadius * 0.95;
+      const sizePx = sizeCss * dpr;
+
+      const base = i * FLOATS_PER_DOT;
+      this.dotScratch[base + 0] = nx;
+      this.dotScratch[base + 1] = ny;
+      this.dotScratch[base + 2] = sizePx;
+      this.dotScratch[base + 3] = state;
+      this.dotScratch[base + 4] = this.hashSeed(i);
+      this.dotScratch[base + 5] = 0;
+      this.dotScratch[base + 6] = 0;
+      this.dotScratch[base + 7] = 0;
+    }
+
+    this.device.queue.writeBuffer(
+      this.dotBuffer,
+      0,
+      this.dotScratch.subarray(0, count * FLOATS_PER_DOT)
+    );
   }
 
   updateMouseState(active: boolean, x: number, y: number, trailPoints: TrailPoint[]): void {
@@ -443,6 +563,17 @@ export class SparkleRenderer {
     this.uniformScratch[7] = 0;
     this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformScratch);
 
+    // Update dot uniforms (time + resolution + full intensity)
+    this.dotUniformScratch[0] = timeSec;
+    this.dotUniformScratch[1] = 0;
+    this.dotUniformScratch[2] = this.canvas.width;
+    this.dotUniformScratch[3] = this.canvas.height;
+    this.dotUniformScratch[4] = 1;
+    this.dotUniformScratch[5] = 0;
+    this.dotUniformScratch[6] = 0;
+    this.dotUniformScratch[7] = 0;
+    this.device.queue.writeBuffer(this.dotUniformBuffer, 0, this.dotUniformScratch);
+
     const commandEncoder = this.device.createCommandEncoder();
 
     const pass = commandEncoder.beginRenderPass({
@@ -455,6 +586,14 @@ export class SparkleRenderer {
         },
       ],
     });
+
+    if (this.dotCount > 0) {
+      pass.setPipeline(this.dotPipeline);
+      pass.setBindGroup(0, this.dotBindGroup);
+      pass.setVertexBuffer(0, this.quadVertexBuffer);
+      pass.setVertexBuffer(1, this.dotBuffer);
+      pass.draw(6, this.dotCount, 0, 0);
+    }
 
     pass.setPipeline(this.pipeline);
     pass.setBindGroup(0, this.bindGroup);
@@ -487,6 +626,14 @@ export class SparkleRenderer {
     x ^= x >>> 17;
     x ^= x << 5;
     this.rngState = x;
+    return ((x >>> 0) / 4294967296);
+  }
+
+  private hashSeed(index: number): number {
+    let x = (index + 1) * 0x9e3779b1;
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
     return ((x >>> 0) / 4294967296);
   }
 
