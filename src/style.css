@@ -42,6 +42,7 @@ html, body {
 #sparkle-canvas {
   z-index: 3;
   pointer-events: none; /* Let pointer events pass through to game canvas */
+  mix-blend-mode: screen;
 }
 
 .error-message {

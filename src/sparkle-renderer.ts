@@ -134,7 +134,7 @@ export class SparkleRenderer {
                         format: presentationFormat,
                         blend: {
                             color: {
-                                srcFactor: 'src-alpha',
+                                srcFactor: 'one',
                                 dstFactor: 'one-minus-src-alpha',
                                 operation: 'add',
                             },
