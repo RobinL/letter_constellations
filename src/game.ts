@@ -554,6 +554,17 @@ export class Game {
     if (segmentCount === 0) {
       return;
     }
+    const segmentLengths = segments.map((segment) => {
+      const from = points[segment.from];
+      const to = points[segment.to];
+      return Math.hypot(to.x - from.x, to.y - from.y);
+    });
+    const nonZeroLengths = segmentLengths.filter((length) => length > 0);
+    if (nonZeroLengths.length === 0) {
+      return;
+    }
+    const baseLength = computeMedian(nonZeroLengths);
+    const lineSpeed = baseLength / this.lineSegmentSeconds;
     this.lineSegmentIndex = Math.min(this.lineSegmentIndex, segmentCount - 1);
 
     if (this.linePauseRemaining > 0) {
@@ -565,16 +576,28 @@ export class Game {
       this.lineSegmentT = 0;
     }
 
-    this.lineSegmentT += deltaTime / this.lineSegmentSeconds;
-    while (this.lineSegmentT >= 1) {
-      this.lineSegmentT -= 1;
-      this.lineSegmentIndex += 1;
-
+    let remainingDistance = deltaTime * lineSpeed;
+    while (remainingDistance > 0) {
       if (this.lineSegmentIndex >= segmentCount) {
         this.linePauseRemaining = this.lineLoopPauseSeconds;
         this.lineSegmentIndex = 0;
         this.lineSegmentT = 0;
         break;
+      }
+      const segmentLength = segmentLengths[this.lineSegmentIndex] ?? 0;
+      if (segmentLength <= 0) {
+        this.lineSegmentIndex += 1;
+        this.lineSegmentT = 0;
+        continue;
+      }
+      const distanceToEnd = segmentLength * (1 - this.lineSegmentT);
+      if (remainingDistance < distanceToEnd) {
+        this.lineSegmentT += remainingDistance / segmentLength;
+        remainingDistance = 0;
+      } else {
+        remainingDistance -= distanceToEnd;
+        this.lineSegmentIndex += 1;
+        this.lineSegmentT = 0;
       }
     }
   }
