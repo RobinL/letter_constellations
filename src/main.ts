@@ -138,12 +138,8 @@ async function main() {
   gameCanvas.id = 'game-canvas';
   app.appendChild(gameCanvas);
 
-  const muteButton = document.createElement('button');
-  muteButton.className = 'mute-button';
-  muteButton.type = 'button';
-  muteButton.textContent = 'Mute';
-  muteButton.setAttribute('aria-pressed', 'false');
-  app.appendChild(muteButton);
+  const controlsBar = document.createElement('div');
+  controlsBar.className = 'controls-bar';
 
   const topControls = document.createElement('div');
   topControls.className = 'top-controls';
@@ -160,7 +156,13 @@ async function main() {
   resetButton.textContent = 'Reset';
   topControls.appendChild(resetButton);
 
-  app.appendChild(topControls);
+  const muteButton = document.createElement('button');
+  muteButton.className = 'mute-button';
+  muteButton.type = 'button';
+  muteButton.textContent = 'Mute';
+  muteButton.setAttribute('aria-pressed', 'false');
+
+  controlsBar.appendChild(topControls);
 
   const volumeControl = document.createElement('div');
   volumeControl.className = 'volume-control';
@@ -168,7 +170,9 @@ async function main() {
     <label for="volume-slider">Volume</label>
     <input id="volume-slider" type="range" min="0" max="2" step="0.05" value="0.33" />
   `;
-  app.appendChild(volumeControl);
+  controlsBar.appendChild(volumeControl);
+  controlsBar.appendChild(muteButton);
+  app.appendChild(controlsBar);
   const volumeSlider = volumeControl.querySelector<HTMLInputElement>('#volume-slider')!;
   currentVolume = Number(volumeSlider.value);
   chimeAudio.volume = Math.min(1, currentVolume);

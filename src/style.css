@@ -45,14 +45,21 @@ html, body {
   mix-blend-mode: screen;
 }
 
-.top-controls {
+.controls-bar {
   position: fixed;
   top: 16px;
-  right: 16px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 4;
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  align-items: center;
   pointer-events: auto;
+}
+
+.top-controls {
+  display: flex;
+  gap: 8px;
 }
 
 .control-button {
@@ -76,10 +83,6 @@ html, body {
 }
 
 .mute-button {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 4;
   font-family: "Trebuchet MS", "Lucida Sans", Arial, sans-serif;
   font-size: 12px;
   letter-spacing: 0.08em;
@@ -90,15 +93,10 @@ html, body {
   border-radius: 999px;
   padding: 8px 14px;
   cursor: pointer;
-  pointer-events: auto;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
 .volume-control {
-  position: fixed;
-  top: 16px;
-  left: 16px;
-  z-index: 4;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -126,7 +124,7 @@ html, body {
 
 .letter-display {
   font-family: "Andika", "Trebuchet MS", "Lucida Sans", Arial, sans-serif;
-  font-size: clamp(48px, 8vw, 120px);
+  font-size: clamp(72px, 11vw, 180px);
   color: rgba(255, 255, 255, 0.95);
   text-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
   text-transform: lowercase;
@@ -177,8 +175,8 @@ html, body {
 }
 
 .item-card img {
-  width: 68px;
-  height: 68px;
+  width: 104px;
+  height: 104px;
   object-fit: contain;
   filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
 }
@@ -206,8 +204,8 @@ html, body {
 
 @media (max-width: 640px) {
   .item-card img {
-    width: 56px;
-    height: 56px;
+    width: 84px;
+    height: 84px;
   }
 
   .item-card::before {
@@ -224,7 +222,7 @@ html, body {
 @media (orientation: portrait) {
   .letter-panel {
     left: 50%;
-    bottom: 72px;
+    bottom: 32px;
     transform: translateX(-50%);
     display: flex;
     flex-direction: column;
