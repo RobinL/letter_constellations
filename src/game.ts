@@ -67,7 +67,7 @@ export class Game {
   private lastPlotSize = { width: 0, height: 0 };
   private currentTargetIndex = 0;
   private dotRadius = 20;
-  private hitRadiusScale = 1.5;
+  private hitRadiusScale = 2.15;
   private lineSegmentIndex = 0;
   private lineSegmentT = 0;
   private linePauseRemaining = 0;
@@ -259,13 +259,19 @@ export class Game {
     const target = this.scaledPlotPoints[this.currentTargetIndex];
     const dx = point.x - target.x;
     const dy = point.y - target.y;
-    const radius = this.dotRadius * this.hitRadiusScale;
+    const radius = this.getTargetDotRadius() * this.hitRadiusScale;
     if (dx * dx + dy * dy <= radius * radius) {
       this.currentTargetIndex = Math.min(
         this.currentTargetIndex + 1,
         this.scaledPlotPoints.length
       );
     }
+  }
+
+  private getTargetDotRadius(): number {
+    // Keep in sync with size scaling in sparkle-renderer.ts.
+    const baseRadius = Math.max(10, this.dotRadius * 1.3);
+    return baseRadius * 1.45;
   }
 
   private advancePlotAnimation(deltaTime: number): void {
