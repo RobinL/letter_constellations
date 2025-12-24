@@ -1,0 +1,184 @@
+[
+  {
+    "order": 1,
+    "x": 640,
+    "y": 460,
+    "display": "keystone",
+    "note": "Start Black Dot"
+  },
+  {
+    "order": 2,
+    "x": 580,
+    "y": 380,
+    "display": "intermediate",
+    "note": "Curve Up-Left"
+  },
+  {
+    "order": 3,
+    "x": 500,
+    "y": 330,
+    "display": "intermediate",
+    "note": "Curve Up-Left"
+  },
+  {
+    "order": 4,
+    "x": 400,
+    "y": 310,
+    "display": "keystone",
+    "note": "Top of Loop"
+  },
+  {
+    "order": 5,
+    "x": 300,
+    "y": 340,
+    "display": "intermediate",
+    "note": "Curve Down-Left"
+  },
+  {
+    "order": 6,
+    "x": 220,
+    "y": 420,
+    "display": "intermediate",
+    "note": "Curve Down-Left"
+  },
+  {
+    "order": 7,
+    "x": 160,
+    "y": 550,
+    "display": "keystone",
+    "note": "Leftmost Curve"
+  },
+  {
+    "order": 8,
+    "x": 200,
+    "y": 680,
+    "display": "intermediate",
+    "note": "Curve Down-Right"
+  },
+  {
+    "order": 9,
+    "x": 280,
+    "y": 760,
+    "display": "intermediate",
+    "note": "Curve Down-Right"
+  },
+  {
+    "order": 10,
+    "x": 400,
+    "y": 800,
+    "display": "keystone",
+    "note": "Bottom of Loop"
+  },
+  {
+    "order": 11,
+    "x": 520,
+    "y": 780,
+    "display": "intermediate",
+    "note": "Curve Up-Right"
+  },
+  {
+    "order": 12,
+    "x": 650,
+    "y": 720,
+    "display": "intermediate",
+    "note": "Approach Stem"
+  },
+  {
+    "order": 13,
+    "x": 780,
+    "y": 620,
+    "display": "keystone",
+    "note": "Connect to Stem (Go Up)"
+  },
+  {
+    "order": 14,
+    "x": 780,
+    "y": 520,
+    "display": "intermediate",
+    "note": "Stem Up"
+  },
+  {
+    "order": 15,
+    "x": 780,
+    "y": 420,
+    "display": "intermediate",
+    "note": "Stem Up"
+  },
+  {
+    "order": 16,
+    "x": 780,
+    "y": 320,
+    "display": "keystone",
+    "note": "Stem Up High"
+  },
+  {
+    "order": 17,
+    "x": 780,
+    "y": 200,
+    "display": "intermediate",
+    "note": "Stem Up"
+  },
+  {
+    "order": 18,
+    "x": 780,
+    "y": 100,
+    "display": "intermediate",
+    "note": "Reach Top"
+  },
+  {
+    "order": 19,
+    "x": 780,
+    "y": 90,
+    "display": "keystone",
+    "note": "Top Turnaround"
+  },
+  {
+    "order": 20,
+    "x": 780,
+    "y": 250,
+    "display": "intermediate",
+    "note": "Stem Down (Retrace)"
+  },
+  {
+    "order": 21,
+    "x": 780,
+    "y": 400,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 22,
+    "x": 780,
+    "y": 550,
+    "display": "keystone",
+    "note": "Stem Down Mid"
+  },
+  {
+    "order": 23,
+    "x": 780,
+    "y": 700,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 24,
+    "x": 780,
+    "y": 800,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 25,
+    "x": 780,
+    "y": 900,
+    "display": "keystone",
+    "note": "Stem Bottom"
+  },
+  {
+    "order": 26,
+    "x": 780,
+    "y": 930,
+    "display": "intermediate",
+    "note": "Finish Arrow"
+  }
+]

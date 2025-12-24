@@ -1,0 +1,185 @@
+[
+  {
+    "order": 1,
+    "x": 620,
+    "y": 140,
+    "display": "keystone",
+    "note": "Start Black Dot (Under Arch)"
+  },
+  {
+    "order": 2,
+    "x": 560,
+    "y": 110,
+    "display": "intermediate",
+    "note": "Curve Up-Left"
+  },
+  {
+    "order": 3,
+    "x": 500,
+    "y": 90,
+    "display": "intermediate",
+    "note": "Top Arch Right"
+  },
+  {
+    "order": 4,
+    "x": 440,
+    "y": 90,
+    "display": "keystone",
+    "note": "Top Arch Center"
+  },
+  {
+    "order": 5,
+    "x": 390,
+    "y": 130,
+    "display": "intermediate",
+    "note": "Curve Down-Left"
+  },
+  {
+    "order": 6,
+    "x": 380,
+    "y": 190,
+    "display": "intermediate",
+    "note": "Join Vertical Stem"
+  },
+  {
+    "order": 7,
+    "x": 380,
+    "y": 270,
+    "display": "keystone",
+    "note": "Stem High"
+  },
+  {
+    "order": 8,
+    "x": 380,
+    "y": 360,
+    "display": "intermediate",
+    "note": "Stem (Crossing Point)"
+  },
+  {
+    "order": 9,
+    "x": 380,
+    "y": 450,
+    "display": "intermediate",
+    "note": "Stem Middle"
+  },
+  {
+    "order": 10,
+    "x": 380,
+    "y": 540,
+    "display": "keystone",
+    "note": "Stem Mid-Low"
+  },
+  {
+    "order": 11,
+    "x": 380,
+    "y": 630,
+    "display": "intermediate",
+    "note": "Stem Lower"
+  },
+  {
+    "order": 12,
+    "x": 380,
+    "y": 720,
+    "display": "intermediate",
+    "note": "Stem Lower"
+  },
+  {
+    "order": 13,
+    "x": 380,
+    "y": 810,
+    "display": "keystone",
+    "note": "Stem Bottom Approach"
+  },
+  {
+    "order": 14,
+    "x": 380,
+    "y": 860,
+    "display": "intermediate",
+    "note": "Stem Arrow Start"
+  },
+  {
+    "order": 15,
+    "x": 380,
+    "y": 900,
+    "display": "intermediate",
+    "note": "Stem Arrow Body"
+  },
+  {
+    "order": 16,
+    "x": 380,
+    "y": 930,
+    "display": "keystone",
+    "note": "Stem Arrow Tip"
+  },
+  {
+    "order": 17,
+    "x": 380,
+    "y": 940,
+    "display": "intermediate",
+    "note": "Finish Stroke 1"
+  },
+  {
+    "order": 18,
+    "x": 380,
+    "y": 940,
+    "display": "intermediate",
+    "note": "Pen Lift Point"
+  },
+  {
+    "order": 19,
+    "x": 180,
+    "y": 360,
+    "display": "keystone",
+    "newStroke": true,
+    "note": "Start Stroke 2 (The 'X')"
+  },
+  {
+    "order": 20,
+    "x": 250,
+    "y": 360,
+    "display": "intermediate",
+    "note": "Crossbar Left"
+  },
+  {
+    "order": 21,
+    "x": 320,
+    "y": 360,
+    "display": "intermediate",
+    "note": "Crossbar Approach"
+  },
+  {
+    "order": 22,
+    "x": 390,
+    "y": 360,
+    "display": "keystone",
+    "note": "Crossbar Center (After Stem)"
+  },
+  {
+    "order": 23,
+    "x": 460,
+    "y": 360,
+    "display": "intermediate",
+    "note": "Crossbar Right"
+  },
+  {
+    "order": 24,
+    "x": 530,
+    "y": 360,
+    "display": "intermediate",
+    "note": "Crossbar Right"
+  },
+  {
+    "order": 25,
+    "x": 600,
+    "y": 360,
+    "display": "keystone",
+    "note": "Crossbar Arrow Start"
+  },
+  {
+    "order": 26,
+    "x": 660,
+    "y": 360,
+    "display": "intermediate",
+    "note": "Finish Crossbar Arrow"
+  }
+]

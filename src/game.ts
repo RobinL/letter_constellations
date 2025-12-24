@@ -1,7 +1,8 @@
 import type { PointerPoint } from './input';
 import { InputHandler } from './input';
-import letterA from './assets/letters_json/a.json';
-import letterB from './assets/letters_json/b.json';
+const letterModules = import.meta.glob('./assets/letters_json/*.json', {
+  eager: true,
+});
 
 type PlotPoint = {
   order: number;
@@ -16,7 +17,9 @@ type PlotBounds = {
   maxY: number;
 };
 
-const letterData = [letterA, letterB];
+const letterData = Object.values(letterModules)
+  .map((mod) => (mod as { default: PlotPoint[] }).default)
+  .filter((points): points is PlotPoint[] => Array.isArray(points));
 
 const loadRandomPlotPoints = (): PlotPoint[] => {
   if (letterData.length === 0) {
@@ -66,6 +69,7 @@ export class Game {
   private plotBounds: PlotBounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
   private scaledPlotPoints: PlotPoint[] = [];
   private lastPlotSize = { width: 0, height: 0 };
+  private needsRescale = true;
   private currentTargetIndex = 0;
   private dotRadius = 20;
   private hitRadiusScale = 1.5;
@@ -74,6 +78,9 @@ export class Game {
   private linePauseRemaining = 0;
   private readonly lineSegmentSeconds = 0.37;
   private readonly lineLoopPauseSeconds = 0.4;
+  private completionMessageUntil = 0;
+  private pendingLetterReset = false;
+  private readonly completionMessageSeconds = 2;
 
   constructor(input: InputHandler) {
     this.plotPoints = loadRandomPlotPoints();
@@ -123,10 +130,14 @@ export class Game {
 
     if (
       viewportWidth === this.lastPlotSize.width &&
-      viewportHeight === this.lastPlotSize.height
+      viewportHeight === this.lastPlotSize.height &&
+      !this.needsRescale
     ) {
       return;
     }
+
+    this.lastPlotSize = { width: viewportWidth, height: viewportHeight };
+    this.needsRescale = false;
 
     const boundsWidth = this.plotBounds.maxX - this.plotBounds.minX;
     const boundsHeight = this.plotBounds.maxY - this.plotBounds.minY;
@@ -147,14 +158,14 @@ export class Game {
       x: point.x * scale + offsetX,
       y: point.y * scale + offsetY,
     }));
-    this.lastPlotSize = { width: viewportWidth, height: viewportHeight };
   }
 
   update(deltaTime: number): void {
     this.advancePlotAnimation(deltaTime);
 
+    const now = performance.now() / 1000;
+
     if (this.paths.length > 0) {
-      const now = performance.now() / 1000;
       const cutoff = now - this.fadeSeconds;
       for (const path of this.paths) {
         let keepIndex = 0;
@@ -170,6 +181,12 @@ export class Game {
       }
       this.paths = this.paths.filter((path) => path.length > 0);
     }
+
+    if (this.pendingLetterReset && now >= this.completionMessageUntil) {
+      this.resetForNewLetter();
+      this.pendingLetterReset = false;
+      this.completionMessageUntil = 0;
+    }
   }
 
   render(ctx: CanvasRenderingContext2D): void {
@@ -180,33 +197,36 @@ export class Game {
 
     this.renderPlotLines(ctx);
 
-    if (this.paths.length === 0) {
-      return;
-    }
+    if (this.paths.length > 0) {
+      ctx.strokeStyle = 'rgba(200, 230, 255, 0.9)';
+      ctx.lineWidth = 15;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
 
-    ctx.strokeStyle = 'rgba(200, 230, 255, 0.9)';
-    ctx.lineWidth = 15;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-
-    for (const path of this.paths) {
-      if (path.length === 0) {
-        continue;
-      }
-      ctx.beginPath();
-      path.forEach((point, index) => {
-        if (index === 0) {
-          ctx.moveTo(point.x, point.y);
-        } else {
-          ctx.lineTo(point.x, point.y);
+      for (const path of this.paths) {
+        if (path.length === 0) {
+          continue;
         }
-      });
-      ctx.stroke();
+        ctx.beginPath();
+        path.forEach((point, index) => {
+          if (index === 0) {
+            ctx.moveTo(point.x, point.y);
+          } else {
+            ctx.lineTo(point.x, point.y);
+          }
+        });
+        ctx.stroke();
+      }
     }
+
+    this.renderCompletionMessage(ctx);
 
   }
 
   private startPath(point: PointerPoint): void {
+    if (this.pendingLetterReset) {
+      return;
+    }
     this.isDrawing = true;
     this.currentMousePos = { x: point.x, y: point.y };
     this.currentPath = [{ x: point.x, y: point.y, time: point.time }];
@@ -215,6 +235,9 @@ export class Game {
   }
 
   private extendPath(point: PointerPoint): void {
+    if (this.pendingLetterReset) {
+      return;
+    }
     this.currentMousePos = { x: point.x, y: point.y };
     if (!this.currentPath) {
       return;
@@ -224,6 +247,9 @@ export class Game {
   }
 
   private endPath(point: PointerPoint): void {
+    if (this.pendingLetterReset) {
+      return;
+    }
     this.currentMousePos = { x: point.x, y: point.y };
     if (this.currentPath) {
       this.currentPath.push({ x: point.x, y: point.y, time: point.time });
@@ -297,6 +323,9 @@ export class Game {
       this.lineSegmentIndex = 0;
       this.lineSegmentT = 0;
       this.linePauseRemaining = 0;
+      if (this.currentTargetIndex >= this.scaledPlotPoints.length) {
+        this.handleLetterComplete();
+      }
     }
   }
 
@@ -342,5 +371,55 @@ export class Game {
         break;
       }
     }
+  }
+
+  private handleLetterComplete(): void {
+    if (this.pendingLetterReset) {
+      return;
+    }
+    const now = performance.now() / 1000;
+    this.completionMessageUntil = now + this.completionMessageSeconds;
+    this.pendingLetterReset = true;
+    this.isDrawing = false;
+    this.currentPath = null;
+  }
+
+  private resetForNewLetter(): void {
+    this.plotPoints = loadRandomPlotPoints();
+    this.plotBounds = computeBounds(this.plotPoints);
+    this.scaledPlotPoints = [];
+    this.currentTargetIndex = 0;
+    this.lineSegmentIndex = 0;
+    this.lineSegmentT = 0;
+    this.linePauseRemaining = 0;
+    this.paths = [];
+    this.currentPath = null;
+    this.isDrawing = false;
+    this.needsRescale = true;
+    if (this.lastPlotSize.width > 0 && this.lastPlotSize.height > 0) {
+      this.setViewportSize(this.lastPlotSize.width, this.lastPlotSize.height);
+    }
+  }
+
+  private renderCompletionMessage(ctx: CanvasRenderingContext2D): void {
+    const now = performance.now() / 1000;
+    if (now >= this.completionMessageUntil) {
+      return;
+    }
+
+    const width = ctx.canvas.width / (window.devicePixelRatio || 1);
+    const height = ctx.canvas.height / (window.devicePixelRatio || 1);
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255, 244, 210, 0.95)';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.lineWidth = 6;
+    ctx.font = '700 48px system-ui, -apple-system, sans-serif';
+    const message = 'Well done!';
+    ctx.strokeText(message, width / 2, height * 0.45);
+    ctx.fillText(message, width / 2, height * 0.45);
+    ctx.restore();
   }
 }
