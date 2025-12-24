@@ -89,6 +89,8 @@ async function main() {
     const deltaTime = (currentTime - lastTime) / 1000; // seconds
     lastTime = currentTime;
 
+    if (!game || !renderer || !sparkleRenderer) return;
+
     game.update(deltaTime);
 
     // Get drawing state for sparkle renderer
@@ -109,7 +111,9 @@ async function main() {
     // Render sparkle effects
     sparkleRenderer.render();
 
-    game.render(gameContext);
+    if (gameContext) {
+      game.render(gameContext);
+    }
 
     requestAnimationFrame(animate);
   }

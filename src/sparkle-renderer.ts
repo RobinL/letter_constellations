@@ -52,7 +52,6 @@ export class SparkleRenderer {
   private dotUniformScratch = new Float32Array(8);
 
   // Mouse state (normalized 0..1)
-  private mouseActive = false;
   private mouseRamp = 0;
   private prevActive = false;
 
@@ -60,9 +59,6 @@ export class SparkleRenderer {
   private mouseVelocity = { x: 0, y: 0 };
 
   private lastSimTimeSec = 0;
-
-  // Trail points from Game (CSS px)
-  private lastTrailPoints: TrailPoint[] = [];
 
   // Dot rendering state
   private dotCount = 0;
@@ -333,8 +329,6 @@ export class SparkleRenderer {
   }
 
   updateMouseState(active: boolean, x: number, y: number, trailPoints: TrailPoint[]): void {
-    this.mouseActive = active;
-    this.lastTrailPoints = trailPoints;
 
     const nowSec = (performance.now() - this.startTimeMs) / 1000;
     const dtRaw = this.lastSimTimeSec === 0 ? 0 : nowSec - this.lastSimTimeSec;
