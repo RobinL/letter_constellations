@@ -58,6 +58,10 @@ export type PathPoint = {
   time: number;
 };
 
+type GameCallbacks = {
+  onPointHit?: () => void;
+};
+
 export class Game {
   private plotPoints: PlotPoint[] = [];
   private paths: PathPoint[][] = [];
@@ -81,10 +85,12 @@ export class Game {
   private completionMessageUntil = 0;
   private pendingLetterReset = false;
   private readonly completionMessageSeconds = 2;
+  private callbacks: GameCallbacks;
 
-  constructor(input: InputHandler) {
+  constructor(input: InputHandler, callbacks: GameCallbacks = {}) {
     this.plotPoints = loadRandomPlotPoints();
     this.plotBounds = computeBounds(this.plotPoints);
+    this.callbacks = callbacks;
     input.setCallbacks({
       onStart: (point) => this.startPath(point),
       onMove: (point) => this.extendPath(point),
@@ -320,6 +326,7 @@ export class Game {
         this.currentTargetIndex + 1,
         this.scaledPlotPoints.length
       );
+      this.callbacks.onPointHit?.();
       this.lineSegmentIndex = 0;
       this.lineSegmentT = 0;
       this.linePauseRemaining = 0;

@@ -7,6 +7,25 @@ import { InputHandler } from './input';
 
 async function main() {
   const app = document.querySelector<HTMLDivElement>('#app')!;
+  const auroraAudioUrl = new URL('./assets/aurora.mp3', import.meta.url).toString();
+  const auroraAudio = new Audio(auroraAudioUrl);
+  auroraAudio.loop = true;
+  auroraAudio.preload = 'auto';
+  auroraAudio.volume = 1;
+  const chimeAudioUrl = new URL('./assets/chime.mp3', import.meta.url).toString();
+  const chimeAudio = new Audio(chimeAudioUrl);
+  chimeAudio.preload = 'auto';
+  let audioContext: AudioContext | null = null;
+  let gainNode: GainNode | null = null;
+
+  const ensureAudioContext = () => {
+    if (audioContext) return;
+    audioContext = new AudioContext();
+    const audioSource = audioContext.createMediaElementSource(auroraAudio);
+    gainNode = audioContext.createGain();
+    gainNode.gain.value = 0.33;
+    audioSource.connect(gainNode).connect(audioContext.destination);
+  };
 
   // Create fullscreen aurora canvas (WebGPU background)
   const auroraCanvas = document.createElement('canvas');
@@ -22,6 +41,77 @@ async function main() {
   const gameCanvas = document.createElement('canvas');
   gameCanvas.id = 'game-canvas';
   app.appendChild(gameCanvas);
+
+  const audioAttribution = document.createElement('div');
+  audioAttribution.className = 'audio-attribution';
+  audioAttribution.innerHTML = `
+    <span>Music: </span>
+    <a href="https://freemusicarchive.org/music/Kevin_Hartnell/Umbra_1955/Kevin_Hartnell_-_Umbra_-_10_Aurora/" target="_blank" rel="noopener noreferrer">Aurora</a>
+    <span> by Kevin Hartnell — </span>
+    <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
+    <span> (no changes)</span>
+  `;
+  app.appendChild(audioAttribution);
+
+  const muteButton = document.createElement('button');
+  muteButton.className = 'mute-button';
+  muteButton.type = 'button';
+  muteButton.textContent = 'Mute';
+  muteButton.setAttribute('aria-pressed', 'false');
+  app.appendChild(muteButton);
+
+  const volumeControl = document.createElement('div');
+  volumeControl.className = 'volume-control';
+  volumeControl.innerHTML = `
+    <label for="volume-slider">Volume</label>
+    <input id="volume-slider" type="range" min="0" max="2" step="0.05" value="0.33" />
+  `;
+  app.appendChild(volumeControl);
+  const volumeSlider = volumeControl.querySelector<HTMLInputElement>('#volume-slider')!;
+  chimeAudio.volume = Math.min(1, Number(volumeSlider.value));
+
+  const updateMuteButton = () => {
+    const isMuted = auroraAudio.muted;
+    muteButton.textContent = isMuted ? 'Unmute' : 'Mute';
+    muteButton.setAttribute('aria-pressed', String(isMuted));
+    chimeAudio.muted = isMuted;
+  };
+  updateMuteButton();
+
+  const attemptPlay = () => {
+    ensureAudioContext();
+    if (audioContext && audioContext.state === 'suspended') {
+      audioContext.resume().catch(() => {
+        // Resume can fail until user gesture; playback will retry.
+      });
+    }
+    auroraAudio.play().catch(() => {
+      // Autoplay restrictions are expected; user gesture will retry.
+    });
+  };
+
+  const startAudioOnFirstInteraction = () => {
+    attemptPlay();
+  };
+  document.addEventListener('pointerdown', startAudioOnFirstInteraction, { once: true });
+  setTimeout(attemptPlay, 0);
+
+  muteButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    auroraAudio.muted = !auroraAudio.muted;
+    if (!auroraAudio.muted) {
+      attemptPlay();
+    }
+    updateMuteButton();
+  });
+
+  volumeSlider.addEventListener('input', () => {
+    ensureAudioContext();
+    if (gainNode) {
+      gainNode.gain.value = Number(volumeSlider.value);
+    }
+    chimeAudio.volume = Math.min(1, Number(volumeSlider.value));
+  });
 
   // Set canvas sizes to window size with device pixel ratio
   let renderer: AuroraRenderer | null = null;
@@ -79,7 +169,14 @@ async function main() {
   const input = new InputHandler(gameCanvas, (event) =>
     canvasManager.getPointFromEvent(gameCanvas, event)
   );
-  game = new Game(input);
+  game = new Game(input, {
+    onPointHit: () => {
+      chimeAudio.currentTime = 0;
+      chimeAudio.play().catch(() => {
+        // Autoplay restrictions are expected; next gesture will retry.
+      });
+    },
+  });
   const size = canvasManager.getSize();
   game.setViewportSize(size.width, size.height);
 

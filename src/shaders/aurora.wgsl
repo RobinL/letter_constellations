@@ -16,6 +16,119 @@ struct Uniforms {
 @group(0) @binding(1) var backgroundTexture: texture_2d<f32>;
 @group(0) @binding(2) var backgroundSampler: sampler;
 
+// --- Stars (cheap, no loops) -----------------------------------------------
+fn hash_u32(x: u32) -> u32 {
+    var v = x;
+    v ^= v >> 16u;
+    v *= 0x7feb352du;
+    v ^= v >> 15u;
+    v *= 0x846ca68bu;
+    v ^= v >> 16u;
+    return v;
+}
+
+fn hash2_u32(p: vec2<u32>, salt: u32) -> u32 {
+    let x = p.x ^ (p.y * 0x9e3779b9u) ^ (salt * 0x85ebca6bu);
+    return hash_u32(x);
+}
+
+fn hash01(p: vec2<u32>, salt: u32) -> f32 {
+    let h = hash2_u32(p, salt);
+    return f32(h) / 4294967296.0;
+}
+
+fn starFromCell(
+    p: vec2<f32>,
+    cellI: vec2<i32>,
+    time: f32,
+    cellPx: f32,
+    density: f32,
+    sizeMinPx: f32,
+    sizeMaxPx: f32,
+    brightness: f32
+) -> vec3<f32> {
+    if (any(cellI < vec2<i32>(0))) {
+        return vec3<f32>(0.0);
+    }
+
+    let cell = vec2<u32>(cellI);
+    let r0 = hash01(cell, 0u);
+    if (r0 > density) {
+        return vec3<f32>(0.0);
+    }
+
+    let center01 = vec2<f32>(hash01(cell, 1u), hash01(cell, 2u));
+    let centerPx = (vec2<f32>(cell) + center01) * cellPx;
+    let dPx = distance(p, centerPx);
+
+    let rSize = hash01(cell, 3u);
+    let sizePx = mix(sizeMinPx, sizeMaxPx, pow(rSize, 2.4));
+
+    var core = 1.0 - smoothstep(0.0, sizePx, dPx);
+    core = pow(core, 6.0);
+
+    var glow = 1.0 - smoothstep(sizePx, sizePx * 5.0, dPx);
+    glow = pow(glow, 2.0) * 0.35;
+
+    let phase = hash01(cell, 4u) * 6.2831853;
+    let baseSpeed = mix(0.34, 1.20, hash01(cell, 5u)) * (10.0 / max(cellPx, 6.0));
+    let t1 = 0.5 + 0.5 * sin(time * baseSpeed + phase);
+    let t2 = 0.5 + 0.5 * sin(time * (baseSpeed * 1.73) + phase * 1.37);
+    let sparkle = pow(max(t1, t2), 4.4);
+    let slowBreath = 0.85 + 0.15 * sin(time * 0.20 + phase * 0.5);
+    let tw = mix(0.40, 2.55, sparkle) * slowBreath;
+
+    let tintMix = hash01(cell, 6u);
+    let cool = vec3<f32>(0.80, 0.88, 1.00);
+    let warm = vec3<f32>(1.00, 0.95, 0.86);
+    let tint = mix(cool, warm, tintMix);
+    let color = mix(vec3<f32>(1.0), tint, 0.25 + sparkle * 0.15);
+
+    let brightJitter = mix(0.60, 1.60, hash01(cell, 7u));
+    let intensity = (core + glow) * tw * brightness * brightJitter;
+    return color * intensity;
+}
+
+fn starLayer(
+    uv: vec2<f32>,
+    time: f32,
+    cellPx: f32,
+    density: f32,
+    sizeMinPx: f32,
+    sizeMaxPx: f32,
+    brightness: f32
+) -> vec3<f32> {
+    let p = uv * uniforms.resolution;
+    let baseCell = vec2<i32>(floor(p / cellPx));
+    var s = vec3<f32>(0.0);
+
+    s += starFromCell(p, baseCell + vec2<i32>(-1, -1), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(0, -1), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(1, -1), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(-1, 0), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
+    s += starFromCell(p, baseCell, time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(1, 0), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(-1, 1), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(0, 1), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(1, 1), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
+
+    return s;
+}
+
+fn starField(uv: vec2<f32>, time: f32) -> vec3<f32> {
+    let skyMask = 1.0 - smoothstep(0.55, 0.95, uv.y);
+    if (skyMask <= 0.0) {
+        return vec3<f32>(0.0);
+    }
+
+    var s = vec3<f32>(0.0);
+    s += starLayer(uv, time, 7.0, 0.018, 0.9, 1.9, 0.34);
+    s += starLayer(uv, time, 16.0, 0.012, 1.2, 3.0, 0.46);
+    s += starLayer(uv, time, 34.0, 0.005, 2.0, 4.6, 0.62);
+
+    return s * skyMask;
+}
+
 // Fullscreen triangle vertex shader
 @vertex
 fn vertexMain(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
@@ -102,8 +215,8 @@ fn aurora(uv: vec2<f32>, time: f32) -> vec4<f32> {
         let waveFreq = 1.5 + fi * 0.5;
         let waveAmp = 0.08 + fi * 0.03;
 
-        // Vertical position of this aurora band - in top 50% of screen
-        let baseY = 0.25 + fi * 0.06;
+        // Vertical position of this aurora band - in top third of screen
+        let baseY = 0.16 + fi * 0.05;
 
         // Create flowing wave motion
         let wave1 = sin(uv.x * waveFreq + time * waveSpeed) * waveAmp;
@@ -131,8 +244,8 @@ fn aurora(uv: vec2<f32>, time: f32) -> vec4<f32> {
         let edgeFade = smoothstep(0.0, 0.3, uv.x) * smoothstep(1.0, 0.7, uv.x);
         intensity *= edgeFade;
 
-        // Only show aurora in top 50% of screen
-        let topHalfFade = smoothstep(0.5, 0.45, uv.y);
+        // Only show aurora in top third of screen
+        let topHalfFade = smoothstep(0.40, 0.32, uv.y);
         intensity *= topHalfFade;
 
         // Add shimmer effect
@@ -164,9 +277,12 @@ fn fragmentMain(input: VertexOutput) -> @location(0) vec4<f32> {
     // Generate aurora
     let auroraEffect = aurora(uv, time);
 
+    // Stars behind aurora (dim where aurora is strongest)
+    let stars = starField(uv, time) * (1.0 - auroraEffect.a * 0.65);
+
     // Blend aurora over background using additive-like blending
     // This makes the aurora glow over the scene
-    let blendedColor = background.rgb + auroraEffect.rgb * auroraEffect.a;
+    let blendedColor = background.rgb + stars + auroraEffect.rgb * auroraEffect.a;
 
     return vec4<f32>(blendedColor, 1.0);
 }
