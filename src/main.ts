@@ -89,13 +89,14 @@ async function main() {
   chimeAudio.preload = 'auto';
   let audioContext: AudioContext | null = null;
   let gainNode: GainNode | null = null;
+  let currentVolume = 0.33;
 
   const ensureAudioContext = () => {
     if (audioContext) return;
     audioContext = new AudioContext();
     const audioSource = audioContext.createMediaElementSource(auroraAudio);
     gainNode = audioContext.createGain();
-    gainNode.gain.value = 0.33;
+    gainNode.gain.value = 0.25 * currentVolume;
     audioSource.connect(gainNode).connect(audioContext.destination);
   };
 
@@ -113,17 +114,6 @@ async function main() {
   const gameCanvas = document.createElement('canvas');
   gameCanvas.id = 'game-canvas';
   app.appendChild(gameCanvas);
-
-  const audioAttribution = document.createElement('div');
-  audioAttribution.className = 'audio-attribution';
-  audioAttribution.innerHTML = `
-    <span>Music: </span>
-    <a href="https://freemusicarchive.org/music/Kevin_Hartnell/Umbra_1955/Kevin_Hartnell_-_Umbra_-_10_Aurora/" target="_blank" rel="noopener noreferrer">Aurora</a>
-    <span> by Kevin Hartnell — </span>
-    <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
-    <span> (no changes)</span>
-  `;
-  app.appendChild(audioAttribution);
 
   const muteButton = document.createElement('button');
   muteButton.className = 'mute-button';
@@ -157,7 +147,8 @@ async function main() {
   `;
   app.appendChild(volumeControl);
   const volumeSlider = volumeControl.querySelector<HTMLInputElement>('#volume-slider')!;
-  chimeAudio.volume = Math.min(1, Number(volumeSlider.value));
+  currentVolume = Number(volumeSlider.value);
+  chimeAudio.volume = Math.min(1, currentVolume);
   const voiceAudioCache = new Map<string, HTMLAudioElement>();
   const voiceAudioElements = new Set<HTMLAudioElement>();
   let activeVoiceAudio: HTMLAudioElement | null = null;
@@ -278,11 +269,13 @@ async function main() {
 
   volumeSlider.addEventListener('input', () => {
     ensureAudioContext();
+    const sliderValue = Number(volumeSlider.value);
+    currentVolume = sliderValue;
     if (gainNode) {
-      gainNode.gain.value = Number(volumeSlider.value);
+      gainNode.gain.value = 0.25 * sliderValue;
     }
-    chimeAudio.volume = Math.min(1, Number(volumeSlider.value));
-    const voiceVolume = Math.min(1, Number(volumeSlider.value));
+    chimeAudio.volume = Math.min(1, sliderValue);
+    const voiceVolume = Math.min(1, sliderValue);
     for (const audio of voiceAudioElements) {
       audio.volume = voiceVolume;
     }
@@ -328,12 +321,7 @@ async function main() {
       image.loading = 'lazy';
       image.decoding = 'async';
 
-      const label = document.createElement('span');
-      label.className = 'item-label';
-      label.textContent = item.label;
-
       button.appendChild(image);
-      button.appendChild(label);
       itemTray.appendChild(button);
     }
   };

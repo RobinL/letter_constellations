@@ -45,36 +45,6 @@ html, body {
   mix-blend-mode: screen;
 }
 
-.audio-attribution {
-  position: fixed;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 4;
-  font-family: "Trebuchet MS", "Lucida Sans", Arial, sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.8);
-  text-align: center;
-  pointer-events: auto;
-  padding: 4px 8px;
-  background: rgba(0, 0, 0, 0.35);
-  border-radius: 12px;
-  backdrop-filter: blur(6px);
-}
-
-.audio-attribution a {
-  color: rgba(255, 255, 255, 0.9);
-  text-decoration: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
-}
-
-.audio-attribution a:hover,
-.audio-attribution a:focus-visible {
-  color: #ffffff;
-  border-bottom-color: #ffffff;
-}
-
 .top-controls {
   position: fixed;
   top: 16px;
@@ -126,8 +96,8 @@ html, body {
 
 .volume-control {
   position: fixed;
-  right: 16px;
-  bottom: 60px;
+  top: 16px;
+  left: 16px;
   z-index: 4;
   display: flex;
   align-items: center;
@@ -155,35 +125,46 @@ html, body {
   transform: translateX(-50%);
   z-index: 4;
   display: flex;
-  gap: 12px;
-  align-items: stretch;
+  gap: 16px;
+  align-items: center;
   justify-content: center;
   width: min(90vw, 420px);
-  padding: 10px 12px;
-  border-radius: 18px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(6px);
   pointer-events: auto;
 }
 
 .item-card {
+  position: relative;
   flex: 1;
   min-width: 0;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  padding: 8px 6px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  padding: 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.9);
-  font-family: "Trebuchet MS", "Lucida Sans", Arial, sans-serif;
-  font-size: 12px;
-  text-transform: capitalize;
-  letter-spacing: 0.02em;
+}
+
+.item-card::before {
+  content: '';
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -52%);
+  border-radius: 999px;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 1),
+    rgba(255, 255, 255, 0.55) 58%,
+    rgba(255, 255, 255, 0) 78%
+  );
+  filter: blur(26px);
+  z-index: -1;
+  pointer-events: none;
 }
 
 .item-card img {
@@ -195,15 +176,8 @@ html, body {
 
 .item-card:hover,
 .item-card:focus-visible {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.45);
-}
-
-.item-label {
-  text-align: center;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.85);
-  line-height: 1.1;
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
 }
 
 .item-empty {
@@ -224,13 +198,18 @@ html, body {
 @media (max-width: 640px) {
   .item-tray {
     width: min(94vw, 360px);
-    gap: 8px;
-    padding: 8px;
+    gap: 10px;
   }
 
   .item-card img {
     width: 56px;
     height: 56px;
+  }
+
+  .item-card::before {
+    width: 140px;
+    height: 140px;
+    filter: blur(24px);
   }
 
   .item-label {
