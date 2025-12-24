@@ -169,6 +169,8 @@ export class Game {
   private completionMessageUntil = 0;
   private pendingLetterReset = false;
   private readonly completionMessageSeconds = 2;
+  private completionGraceUntil = 0;
+  private readonly completionGraceSeconds = 0.25;
   private callbacks: GameCallbacks;
   private currentLetterName = 'unknown';
   private enabledLetters: Set<string> | null = null;
@@ -233,6 +235,7 @@ export class Game {
     this.linePauseRemaining = 0;
     this.pendingLetterReset = false;
     this.completionMessageUntil = 0;
+    this.completionGraceUntil = 0;
   }
 
   setViewportSize(width: number, height: number): void {
@@ -280,6 +283,9 @@ export class Game {
     this.advancePlotAnimation(deltaTime);
 
     const now = performance.now() / 1000;
+    if (this.pendingLetterReset) {
+      this.lockInputAfterCompletion(now);
+    }
 
     if (this.paths.length > 0) {
       const cutoff = now - this.fadeSeconds;
@@ -302,6 +308,7 @@ export class Game {
       this.resetForNewLetter();
       this.pendingLetterReset = false;
       this.completionMessageUntil = 0;
+      this.completionGraceUntil = 0;
     }
   }
 
@@ -351,10 +358,11 @@ export class Game {
   }
 
   private extendPath(point: PointerPoint): void {
-    if (this.pendingLetterReset) {
+    this.currentMousePos = { x: point.x, y: point.y };
+    if (this.pendingLetterReset && !this.isCompletionGraceActive(point.time)) {
+      this.lockInputAfterCompletion(point.time);
       return;
     }
-    this.currentMousePos = { x: point.x, y: point.y };
     if (!this.currentPath) {
       return;
     }
@@ -363,14 +371,27 @@ export class Game {
   }
 
   private endPath(point: PointerPoint): void {
-    if (this.pendingLetterReset) {
+    this.currentMousePos = { x: point.x, y: point.y };
+    if (this.pendingLetterReset && !this.isCompletionGraceActive(point.time)) {
+      this.lockInputAfterCompletion(point.time);
       return;
     }
-    this.currentMousePos = { x: point.x, y: point.y };
     if (this.currentPath) {
       this.currentPath.push({ x: point.x, y: point.y, time: point.time });
     }
     this.tryAdvanceTarget(point);
+    this.isDrawing = false;
+    this.currentPath = null;
+  }
+
+  private isCompletionGraceActive(now: number): boolean {
+    return this.pendingLetterReset && now < this.completionGraceUntil;
+  }
+
+  private lockInputAfterCompletion(now: number): void {
+    if (!this.pendingLetterReset || now < this.completionGraceUntil) {
+      return;
+    }
     this.isDrawing = false;
     this.currentPath = null;
   }
@@ -531,9 +552,8 @@ export class Game {
     }
     const now = performance.now() / 1000;
     this.completionMessageUntil = now + this.completionMessageSeconds;
+    this.completionGraceUntil = now + this.completionGraceSeconds;
     this.pendingLetterReset = true;
-    this.isDrawing = false;
-    this.currentPath = null;
   }
 
   private resetForNewLetter(): void {
@@ -551,6 +571,7 @@ export class Game {
     this.currentPath = null;
     this.isDrawing = false;
     this.needsRescale = true;
+    this.completionGraceUntil = 0;
     if (this.lastPlotSize.width > 0 && this.lastPlotSize.height > 0) {
       this.setViewportSize(this.lastPlotSize.width, this.lastPlotSize.height);
     }
