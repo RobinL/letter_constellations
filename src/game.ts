@@ -80,7 +80,7 @@ export class Game {
   private lineSegmentIndex = 0;
   private lineSegmentT = 0;
   private linePauseRemaining = 0;
-  private readonly lineSegmentSeconds = 0.37;
+  private readonly lineSegmentSeconds = 0.123;
   private readonly lineLoopPauseSeconds = 0.4;
   private completionMessageUntil = 0;
   private pendingLetterReset = false;

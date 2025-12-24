@@ -6,6 +6,8 @@ export type CanvasSize = {
 
 export class CanvasManager {
   private size: CanvasSize;
+  private readonly auroraScale = 0.66;
+  private readonly sparkleScale = 1.0;
 
   constructor(
     private auroraCanvas: HTMLCanvasElement,
@@ -19,11 +21,14 @@ export class CanvasManager {
     const width = window.innerWidth;
     const height = window.innerHeight;
     const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const effectBase = Math.min(1, dpr);
+    const auroraDpr = Math.max(0.5, effectBase * this.auroraScale);
+    const sparkleDpr = Math.max(0.5, effectBase * this.sparkleScale);
 
-    this.applySize(this.auroraCanvas, width, height, dpr);
+    this.applySize(this.auroraCanvas, width, height, auroraDpr);
     this.applySize(this.gameCanvas, width, height, dpr);
     if (this.sparkleCanvas) {
-      this.applySize(this.sparkleCanvas, width, height, dpr);
+      this.applySize(this.sparkleCanvas, width, height, sparkleDpr);
     }
 
     this.size = { width, height, dpr };

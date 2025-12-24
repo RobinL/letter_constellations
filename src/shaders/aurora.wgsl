@@ -172,7 +172,7 @@ fn fbm(p: vec2<f32>) -> f32 {
     var frequency = 1.0;
     var pos = p;
 
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < 3; i++) {
         value += amplitude * noise(pos * frequency);
         amplitude *= 0.5;
         frequency *= 2.0;
@@ -205,9 +205,11 @@ fn auroraColor(t: f32, intensity: f32) -> vec3<f32> {
 fn aurora(uv: vec2<f32>, time: f32) -> vec4<f32> {
     var totalIntensity = 0.0;
     var totalColor = vec3<f32>(0.0);
+    let edgeFade = smoothstep(0.0, 0.3, uv.x) * smoothstep(1.0, 0.7, uv.x);
+    let topHalfFade = smoothstep(0.5, 0.45, uv.y);
 
     // Create multiple aurora curtains/ribbons
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 2; i++) {
         let fi = f32(i);
 
         // Horizontal wave parameters
@@ -240,13 +242,8 @@ fn aurora(uv: vec2<f32>, time: f32) -> vec4<f32> {
         let streaks = pow(streakNoise, 2.0);
         intensity *= 0.5 + streaks * 0.8;
 
-        // Fade aurora at edges of screen
-        let edgeFade = smoothstep(0.0, 0.3, uv.x) * smoothstep(1.0, 0.7, uv.x);
-        intensity *= edgeFade;
-
-        // Only show aurora in top third of screen
-        let topHalfFade = smoothstep(0.40, 0.32, uv.y);
-        intensity *= topHalfFade;
+        // Fade aurora at edges of screen + keep it in the top half
+        intensity *= edgeFade * topHalfFade;
 
         // Add shimmer effect
         let shimmer = sin(uv.x * 50.0 + time * 2.0 + fi * 20.0) * 0.1 + 0.9;

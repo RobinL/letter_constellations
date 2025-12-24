@@ -149,7 +149,7 @@ async function main() {
   }
 
   const resize = () => {
-    const { width, height, dpr } = canvasManager.resize();
+    const { width, height } = canvasManager.resize();
     canvasManager.configureGameContext(gameContext);
     if (game) {
       game.setViewportSize(width, height);
@@ -157,10 +157,10 @@ async function main() {
 
     // Update renderers with new size (if initialized)
     if (renderer) {
-      renderer.resize(width * dpr, height * dpr);
+      renderer.resize(auroraCanvas.width, auroraCanvas.height);
     }
     if (sparkleRenderer) {
-      sparkleRenderer.resize(width * dpr, height * dpr);
+      sparkleRenderer.resize(sparkleCanvas.width, sparkleCanvas.height);
     }
   };
   resize();
@@ -216,6 +216,7 @@ async function main() {
 
   // Main animation loop
   let lastTime = performance.now();
+  let auroraFrame = 0;
   function animate(currentTime: number) {
     const deltaTime = (currentTime - lastTime) / 1000; // seconds
     lastTime = currentTime;
@@ -236,8 +237,10 @@ async function main() {
     const dotState = game.getDotState();
     sparkleRenderer.setDots(dotState.dots, dotState.currentIndex, dotState.radius);
 
-    // Render aurora background
-    renderer.render();
+    // Render aurora background every other frame
+    if ((auroraFrame++ & 1) === 0) {
+      renderer.render();
+    }
 
     // Render sparkle effects
     sparkleRenderer.render();
