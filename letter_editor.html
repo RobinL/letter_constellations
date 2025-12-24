@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letter Editor</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        select,
+        button {
+            padding: 8px 16px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+
+        select {
+            background: #2a2a4e;
+            color: #fff;
+        }
+
+        button {
+            background: #4a4a8e;
+            color: #fff;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #5a5aae;
+        }
+
+        button.danger {
+            background: #8e4a4a;
+        }
+
+        button.danger:hover {
+            background: #ae5a5a;
+        }
+
+        .editor-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: #0a0a1a;
+            border: 2px solid #3a3a5e;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #editor-canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        .sidebar {
+            flex: 1;
+            min-width: 300px;
+            max-width: 400px;
+        }
+
+        .instructions {
+            background: #2a2a4e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #aaf;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        .instructions kbd {
+            background: #1a1a2e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #4a4a6e;
+            font-family: monospace;
+        }
+
+        .point-list {
+            background: #2a2a4e;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .point-list h3 {
+            margin-bottom: 10px;
+            color: #aaf;
+        }
+
+        .point-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .point-item:hover {
+            background: #3a3a5e;
+        }
+
+        .point-item.selected {
+            background: #4a4a8e;
+        }
+
+        .point-item.newStroke {
+            border-top: 2px dashed #f80;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+
+        .point-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .point-info {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .point-coords {
+            font-family: monospace;
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            background: #2a2a4e;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Letter Constellation Editor</h1>
+
+    <div class="controls">
+        <label for="letter-select">Letter:</label>
+        <select id="letter-select">
+            <option value="">-- Select --</option>
+        </select>
+
+        <button id="download-btn" disabled>Download JSON</button>
+        <button id="copy-btn" disabled>Copy JSON to Clipboard</button>
+        <button id="undo-btn" disabled>Undo</button>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="show-lines" checked>
+            <label for="show-lines">Show Lines</label>
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="show-order" checked>
+            <label for="show-order">Show Order Numbers</label>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #ff6b6b; width: 24px; height: 24px;"></div>
+            <span>Keystone (large)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #4ecdc4;"></div>
+            <span>Intermediate</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #ffe66d;"></div>
+            <span>Selected</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #f80; border: 2px dashed #fff;"></div>
+            <span>New Stroke</span>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        <div class="canvas-wrapper">
+            <canvas id="editor-canvas" width="1000" height="1000"></canvas>
+        </div>
+
+        <div class="sidebar">
+            <div class="instructions">
+                <h3>Instructions</h3>
+                <ul>
+                    <li><strong>Drag</strong> any point to move it</li>
+                    <li><strong>Click</strong> a point to select it</li>
+                    <li>Press <kbd>C</kbd> to copy selected point (inserts after)</li>
+                    <li>Press <kbd>D</kbd> to delete selected point</li>
+                    <li>Press <kbd>S</kbd> to toggle newStroke on selected point</li>
+                    <li>Press <kbd>K</kbd> to toggle keystone/intermediate</li>
+                    <li>Press <kbd>Esc</kbd> to deselect</li>
+                </ul>
+            </div>
+
+            <div class="point-list">
+                <h3>Points</h3>
+                <div id="point-list-content"></div>
+            </div>
+
+            <div class="status" id="status">
+                Select a letter to begin editing.
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Available letters
+        const AVAILABLE_LETTERS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'm', 'n', 'o', 'p'];
+
+        // State
+        let points = [];
+        let selectedIndex = -1;
+        let dragIndex = -1;
+        let isDragging = false;
+        let dragOffset = { x: 0, y: 0 };
+        let undoStack = [];
+        let currentLetter = '';
+
+        // DOM elements
+        const canvas = document.getElementById('editor-canvas');
+        const ctx = canvas.getContext('2d');
+        const letterSelect = document.getElementById('letter-select');
+        const copyBtn = document.getElementById('copy-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const undoBtn = document.getElementById('undo-btn');
+        const pointListContent = document.getElementById('point-list-content');
+        const statusEl = document.getElementById('status');
+        const showLinesCheckbox = document.getElementById('show-lines');
+        const showOrderCheckbox = document.getElementById('show-order');
+
+        // Colors
+        const COLORS = {
+            keystone: '#ff6b6b',
+            intermediate: '#4ecdc4',
+            selected: '#ffe66d',
+            newStroke: '#ff8800',
+            line: 'rgba(255, 255, 255, 0.3)',
+            background: '#0a0a1a'
+        };
+
+        // Point sizes
+        const SIZES = {
+            keystone: 16,
+            intermediate: 10
+        };
+
+        // Populate letter select
+        AVAILABLE_LETTERS.forEach(letter => {
+            const option = document.createElement('option');
+            option.value = letter;
+            option.textContent = letter.toUpperCase();
+            letterSelect.appendChild(option);
+        });
+
+        // Load letter JSON
+        async function loadLetter(letter) {
+            if (!letter) {
+                points = [];
+                selectedIndex = -1;
+                undoStack = [];
+                copyBtn.disabled = true;
+                undoBtn.disabled = true;
+                render();
+                updatePointList();
+                setStatus('Select a letter to begin editing.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`./src/assets/letters_json/${letter}.json`);
+                if (!response.ok) throw new Error('Failed to load');
+                points = await response.json();
+                selectedIndex = -1;
+                undoStack = [];
+                currentLetter = letter;
+                downloadBtn.disabled = false;
+                copyBtn.disabled = false;
+                render();
+                updatePointList();
+                setStatus(`Loaded letter "${letter.toUpperCase()}" with ${points.length} points.`);
+            } catch (err) {
+                setStatus(`Error loading letter: ${err.message}`);
+                points = [];
+            }
+        }
+
+        // Save state for undo
+        function saveState() {
+            undoStack.push(JSON.stringify(points));
+            if (undoStack.length > 50) undoStack.shift();
+            undoBtn.disabled = false;
+        }
+
+        // Undo
+        function undo() {
+            if (undoStack.length === 0) return;
+            points = JSON.parse(undoStack.pop());
+            reorderPoints();
+            render();
+            updatePointList();
+            undoBtn.disabled = undoStack.length === 0;
+            setStatus('Undid last action.');
+        }
+
+        // Reorder points
+        function reorderPoints() {
+            points.forEach((p, i) => p.order = i + 1);
+        }
+
+        // Get point at position
+        function getPointAt(x, y) {
+            // Check in reverse order so topmost (last drawn) is picked first
+            for (let i = points.length - 1; i >= 0; i--) {
+                const p = points[i];
+                const size = p.display === 'keystone' ? SIZES.keystone : SIZES.intermediate;
+                const dist = Math.sqrt((p.x - x) ** 2 + (p.y - y) ** 2);
+                if (dist <= size + 5) return i;
+            }
+            return -1;
+        }
+
+        // Render canvas
+        function render() {
+            ctx.fillStyle = COLORS.background;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw lines
+            if (showLinesCheckbox.checked && points.length > 1) {
+                ctx.strokeStyle = COLORS.line;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([]);
+
+                let strokeStart = 0;
+                for (let i = 1; i < points.length; i++) {
+                    if (points[i].newStroke) {
+                        // Draw previous stroke
+                        drawStrokePath(strokeStart, i - 1);
+                        strokeStart = i;
+                    }
+                }
+                // Draw final stroke
+                drawStrokePath(strokeStart, points.length - 1);
+            }
+
+            // Draw points
+            points.forEach((p, i) => {
+                const isSelected = i === selectedIndex;
+                const size = p.display === 'keystone' ? SIZES.keystone : SIZES.intermediate;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+
+                // Fill color
+                if (isSelected) {
+                    ctx.fillStyle = COLORS.selected;
+                } else if (p.newStroke) {
+                    ctx.fillStyle = COLORS.newStroke;
+                } else {
+                    ctx.fillStyle = p.display === 'keystone' ? COLORS.keystone : COLORS.intermediate;
+                }
+                ctx.fill();
+
+                // Border for newStroke
+                if (p.newStroke && !isSelected) {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([3, 3]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // Order number
+                if (showOrderCheckbox.checked) {
+                    ctx.fillStyle = '#000';
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(String(i + 1), p.x, p.y);
+                }
+            });
+        }
+
+        function drawStrokePath(startIdx, endIdx) {
+            if (startIdx >= endIdx) return;
+            ctx.beginPath();
+            ctx.moveTo(points[startIdx].x, points[startIdx].y);
+            for (let i = startIdx + 1; i <= endIdx; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.stroke();
+        }
+
+        // Update point list in sidebar
+        function updatePointList() {
+            pointListContent.innerHTML = '';
+
+            points.forEach((p, i) => {
+                const div = document.createElement('div');
+                div.className = 'point-item' + (i === selectedIndex ? ' selected' : '') + (p.newStroke ? ' newStroke' : '');
+
+                const colorDot = document.createElement('div');
+                colorDot.className = 'point-color';
+                colorDot.style.background = p.display === 'keystone' ? COLORS.keystone : COLORS.intermediate;
+                if (p.newStroke) {
+                    colorDot.style.background = COLORS.newStroke;
+                    colorDot.style.border = '2px dashed #fff';
+                }
+
+                const info = document.createElement('div');
+                info.className = 'point-info';
+                info.innerHTML = `<strong>${i + 1}.</strong> ${p.display}${p.newStroke ? ' (new stroke)' : ''}
+          <div class="point-coords">(${Math.round(p.x)}, ${Math.round(p.y)})</div>`;
+
+                div.appendChild(colorDot);
+                div.appendChild(info);
+
+                div.addEventListener('click', () => {
+                    selectedIndex = i;
+                    render();
+                    updatePointList();
+                    setStatus(`Selected point ${i + 1} (${p.display}).`);
+                });
+
+                pointListContent.appendChild(div);
+            });
+
+            // Scroll selected into view
+            if (selectedIndex >= 0) {
+                const selectedEl = pointListContent.children[selectedIndex];
+                if (selectedEl) selectedEl.scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        // Set status message
+        function setStatus(msg) {
+            statusEl.textContent = msg;
+        }
+
+        // Download JSON
+        function downloadJSON() {
+            if (!currentLetter || points.length === 0) return;
+
+            const data = JSON.stringify(points, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentLetter}.json`;
+
+
+            // Copy JSON to clipboard
+            async function copyToClipboard() {
+                if (!currentLetter || points.length === 0) return;
+
+                const data = JSON.stringify(points, null, 2);
+                try {
+                    await navigator.clipboard.writeText(data);
+                    setStatus(`Copied ${currentLetter}.json to clipboard!`);
+                } catch (err) {
+                    setStatus(`Failed to copy to clipboard: ${err.message}`);
+                }
+            } a.click();
+            URL.revokeObjectURL(url);
+            setStatus(`Downloaded ${currentLetter}.json`);
+        }
+
+        // Copy selected point
+        function copyPoint() {
+            if (selectedIndex < 0) {
+                setStatus('No point selected. Click a point first.');
+                return;
+            }
+
+            saveState();
+            const original = points[selectedIndex];
+            const newPoint = {
+                ...original,
+                x: original.x + 30,
+                y: original.y + 30,
+                order: selectedIndex + 2
+            };
+            delete newPoint.newStroke; // Don't copy newStroke flag
+
+            points.splice(selectedIndex + 1, 0, newPoint);
+            reorderPoints();
+            selectedIndex = selectedIndex + 1;
+            render();
+            updatePointList();
+            setStatus(`Copied point. New point is now #${selectedIndex + 1}.`);
+        }
+
+        // Delete selected point
+        function deletePoint() {
+            if (selectedIndex < 0) {
+                setStatus('No point selected. Click a point first.');
+                return;
+            }
+            if (points.length <= 2) {
+                setStatus('Cannot delete: need at least 2 points.');
+                return;
+            }
+
+            saveState();
+            points.splice(selectedIndex, 1);
+            reorderPoints();
+            selectedIndex = Math.min(selectedIndex, points.length - 1);
+            render();
+            updatePointList();
+            setStatus(`Deleted point. ${points.length} points remaining.`);
+        }
+
+        // Toggle newStroke on selected point
+        function toggleNewStroke() {
+            if (selectedIndex < 0) {
+                setStatus('No point selected. Click a point first.');
+                return;
+            }
+            if (selectedIndex === 0) {
+                setStatus('Cannot set newStroke on first point.');
+                return;
+            }
+
+            saveState();
+            const p = points[selectedIndex];
+            if (p.newStroke) {
+                delete p.newStroke;
+                setStatus(`Removed newStroke from point ${selectedIndex + 1}.`);
+            } else {
+                p.newStroke = true;
+                setStatus(`Set newStroke on point ${selectedIndex + 1}.`);
+            }
+            render();
+            updatePointList();
+        }
+
+        // Toggle keystone/intermediate
+        function toggleDisplay() {
+            copyBtn.addEventListener('click', copyToClipboard);
+            if (selectedIndex < 0) {
+                setStatus('No point selected. Click a point first.');
+                return;
+            }
+
+            saveState();
+            const p = points[selectedIndex];
+            p.display = p.display === 'keystone' ? 'intermediate' : 'keystone';
+            render();
+            updatePointList();
+            setStatus(`Changed point ${selectedIndex + 1} to ${p.display}.`);
+        }
+
+        // Event listeners
+        letterSelect.addEventListener('change', () => loadLetter(letterSelect.value));
+        downloadBtn.addEventListener('click', downloadJSON);
+        undoBtn.addEventListener('click', undo);
+        showLinesCheckbox.addEventListener('change', render);
+        showOrderCheckbox.addEventListener('change', render);
+
+        // Canvas mouse events
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            const hitIndex = getPointAt(x, y);
+            if (hitIndex >= 0) {
+                dragIndex = hitIndex;
+                isDragging = true;
+                dragOffset.x = points[hitIndex].x - x;
+                dragOffset.y = points[hitIndex].y - y;
+                saveState();
+                selectedIndex = hitIndex;
+                render();
+                updatePointList();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging || dragIndex < 0) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            points[dragIndex].x = Math.round(x + dragOffset.x);
+            points[dragIndex].y = Math.round(y + dragOffset.y);
+            render();
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (isDragging && dragIndex >= 0) {
+                setStatus(`Moved point ${dragIndex + 1} to (${points[dragIndex].x}, ${points[dragIndex].y}).`);
+                updatePointList();
+            }
+            isDragging = false;
+            dragIndex = -1;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            if (isDragging && dragIndex >= 0) {
+                updatePointList();
+            }
+            isDragging = false;
+            dragIndex = -1;
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if (isDragging) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            const hitIndex = getPointAt(x, y);
+            if (hitIndex >= 0) {
+                selectedIndex = hitIndex;
+                setStatus(`Selected point ${hitIndex + 1} (${points[hitIndex].display}).`);
+            } else {
+                selectedIndex = -1;
+                setStatus('Deselected.');
+            }
+            render();
+            updatePointList();
+        });
+
+        // Keyboard events
+        document.addEventListener('keydown', (e) => {
+            // Don't handle if typing in an input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+            switch (e.key.toLowerCase()) {
+                case 'c':
+                    copyPoint();
+                    break;
+                case 'd':
+                    deletePoint();
+                    break;
+                case 's':
+                    toggleNewStroke();
+                    break;
+                case 'k':
+                    toggleDisplay();
+                    break;
+                case 'escape':
+                    selectedIndex = -1;
+                    render();
+                    updatePointList();
+                    setStatus('Deselected.');
+                    break;
+                case 'z':
+                    if (e.metaKey || e.ctrlKey) {
+                        e.preventDefault();
+                        undo();
+                    }
+                    break;
+            }
+        });
+
+        // Initial render
+        render();
+    </script>
+</body>
+
+</html>
