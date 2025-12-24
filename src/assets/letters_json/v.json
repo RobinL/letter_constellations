@@ -1,0 +1,142 @@
+[
+  {
+    "order": 1,
+    "x": 220,
+    "y": 200,
+    "display": "keystone",
+    "note": "Start Black Dot (Top Left)"
+  },
+  {
+    "order": 2,
+    "x": 250,
+    "y": 280,
+    "display": "intermediate",
+    "note": "Diagonal Down"
+  },
+  {
+    "order": 3,
+    "x": 280,
+    "y": 360,
+    "display": "intermediate",
+    "note": "Diagonal Down"
+  },
+  {
+    "order": 4,
+    "x": 310,
+    "y": 440,
+    "display": "keystone",
+    "note": "Left Side Middle"
+  },
+  {
+    "order": 5,
+    "x": 340,
+    "y": 520,
+    "display": "intermediate",
+    "note": "Diagonal Down"
+  },
+  {
+    "order": 6,
+    "x": 370,
+    "y": 600,
+    "display": "intermediate",
+    "note": "Diagonal Down"
+  },
+  {
+    "order": 7,
+    "x": 400,
+    "y": 680,
+    "display": "keystone",
+    "note": "Left Side Low"
+  },
+  {
+    "order": 8,
+    "x": 430,
+    "y": 760,
+    "display": "intermediate",
+    "note": "Approach Bottom"
+  },
+  {
+    "order": 9,
+    "x": 460,
+    "y": 840,
+    "display": "intermediate",
+    "note": "Approach Vertex"
+  },
+  {
+    "order": 10,
+    "x": 500,
+    "y": 900,
+    "display": "keystone",
+    "note": "Bottom Vertex (Turn)"
+  },
+  {
+    "order": 11,
+    "x": 540,
+    "y": 840,
+    "display": "intermediate",
+    "note": "Diagonal Up"
+  },
+  {
+    "order": 12,
+    "x": 570,
+    "y": 760,
+    "display": "intermediate",
+    "note": "Diagonal Up"
+  },
+  {
+    "order": 13,
+    "x": 600,
+    "y": 680,
+    "display": "keystone",
+    "note": "Right Side Low"
+  },
+  {
+    "order": 14,
+    "x": 630,
+    "y": 600,
+    "display": "intermediate",
+    "note": "Diagonal Up"
+  },
+  {
+    "order": 15,
+    "x": 660,
+    "y": 520,
+    "display": "intermediate",
+    "note": "Diagonal Up"
+  },
+  {
+    "order": 16,
+    "x": 690,
+    "y": 440,
+    "display": "keystone",
+    "note": "Right Side Middle"
+  },
+  {
+    "order": 17,
+    "x": 720,
+    "y": 360,
+    "display": "intermediate",
+    "note": "Diagonal Up"
+  },
+  {
+    "order": 18,
+    "x": 750,
+    "y": 280,
+    "display": "intermediate",
+    "note": "Approach Top"
+  },
+  {
+    "order": 19,
+    "x": 780,
+    "y": 220,
+    "display": "keystone",
+    "note": "Arrow Head"
+  },
+  {
+    "order": 20,
+    "x": 790,
+    "y": 200,
+    "display": "intermediate",
+    "note": "Finish Tip"
+  }
+]

@@ -1,0 +1,184 @@
+[
+  {
+    "order": 1,
+    "x": 150,
+    "y": 200,
+    "display": "keystone",
+    "note": "Start Black Dot (Top Left)"
+  },
+  {
+    "order": 2,
+    "x": 180,
+    "y": 315,
+    "display": "intermediate",
+    "note": "Diagonal Down 1"
+  },
+  {
+    "order": 3,
+    "x": 210,
+    "y": 430,
+    "display": "intermediate",
+    "note": "Diagonal Down 1"
+  },
+  {
+    "order": 4,
+    "x": 240,
+    "y": 550,
+    "display": "keystone",
+    "note": "Left Leg Middle"
+  },
+  {
+    "order": 5,
+    "x": 270,
+    "y": 665,
+    "display": "intermediate",
+    "note": "Diagonal Down 1"
+  },
+  {
+    "order": 6,
+    "x": 300,
+    "y": 780,
+    "display": "intermediate",
+    "note": "Approach Bottom 1"
+  },
+  {
+    "order": 7,
+    "x": 325,
+    "y": 900,
+    "display": "keystone",
+    "note": "First Bottom Turn"
+  },
+  {
+    "order": 8,
+    "x": 355,
+    "y": 780,
+    "display": "intermediate",
+    "note": "Diagonal Up 1"
+  },
+  {
+    "order": 9,
+    "x": 385,
+    "y": 665,
+    "display": "intermediate",
+    "note": "Diagonal Up 1"
+  },
+  {
+    "order": 10,
+    "x": 415,
+    "y": 550,
+    "display": "keystone",
+    "note": "Inner Left Middle"
+  },
+  {
+    "order": 11,
+    "x": 445,
+    "y": 430,
+    "display": "intermediate",
+    "note": "Diagonal Up 1"
+  },
+  {
+    "order": 12,
+    "x": 475,
+    "y": 315,
+    "display": "intermediate",
+    "note": "Approach Peak"
+  },
+  {
+    "order": 13,
+    "x": 500,
+    "y": 200,
+    "display": "keystone",
+    "note": "Middle Peak"
+  },
+  {
+    "order": 14,
+    "x": 525,
+    "y": 315,
+    "display": "intermediate",
+    "note": "Diagonal Down 2"
+  },
+  {
+    "order": 15,
+    "x": 555,
+    "y": 430,
+    "display": "intermediate",
+    "note": "Diagonal Down 2"
+  },
+  {
+    "order": 16,
+    "x": 585,
+    "y": 550,
+    "display": "keystone",
+    "note": "Inner Right Middle"
+  },
+  {
+    "order": 17,
+    "x": 615,
+    "y": 665,
+    "display": "intermediate",
+    "note": "Diagonal Down 2"
+  },
+  {
+    "order": 18,
+    "x": 645,
+    "y": 780,
+    "display": "intermediate",
+    "note": "Approach Bottom 2"
+  },
+  {
+    "order": 19,
+    "x": 675,
+    "y": 900,
+    "display": "keystone",
+    "note": "Second Bottom Turn"
+  },
+  {
+    "order": 20,
+    "x": 700,
+    "y": 780,
+    "display": "intermediate",
+    "note": "Diagonal Up 2"
+  },
+  {
+    "order": 21,
+    "x": 730,
+    "y": 665,
+    "display": "intermediate",
+    "note": "Diagonal Up 2"
+  },
+  {
+    "order": 22,
+    "x": 760,
+    "y": 550,
+    "display": "keystone",
+    "note": "Right Leg Middle"
+  },
+  {
+    "order": 23,
+    "x": 790,
+    "y": 430,
+    "display": "intermediate",
+    "note": "Diagonal Up 2"
+  },
+  {
+    "order": 24,
+    "x": 820,
+    "y": 315,
+    "display": "intermediate",
+    "note": "Approach Finish"
+  },
+  {
+    "order": 25,
+    "x": 850,
+    "y": 200,
+    "display": "keystone",
+    "note": "Arrow Head"
+  },
+  {
+    "order": 26,
+    "x": 860,
+    "y": 180,
+    "display": "intermediate",
+    "note": "Finish Tip"
+  }
+]

@@ -1,0 +1,79 @@
+[
+  {
+    "order": 1,
+    "x": 500,
+    "y": 150,
+    "display": "keystone",
+    "note": "Start Black Dot"
+  },
+  {
+    "order": 2,
+    "x": 500,
+    "y": 250,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 3,
+    "x": 500,
+    "y": 350,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 4,
+    "x": 500,
+    "y": 450,
+    "display": "keystone",
+    "note": "Stem Middle"
+  },
+  {
+    "order": 5,
+    "x": 500,
+    "y": 550,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 6,
+    "x": 500,
+    "y": 650,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 7,
+    "x": 500,
+    "y": 750,
+    "display": "keystone",
+    "note": "Begin Turn"
+  },
+  {
+    "order": 8,
+    "x": 510,
+    "y": 820,
+    "display": "intermediate",
+    "note": "Curve Right"
+  },
+  {
+    "order": 9,
+    "x": 535,
+    "y": 870,
+    "display": "intermediate",
+    "note": "Curve Bottom"
+  },
+  {
+    "order": 10,
+    "x": 570,
+    "y": 900,
+    "display": "keystone",
+    "note": "Hook Upwards"
+  },
+  {
+    "order": 11,
+    "x": 620,
+    "y": 910,
+    "display": "intermediate",
+    "note": "Finish Hook"
+  }
+]
