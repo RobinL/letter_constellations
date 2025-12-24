@@ -1,7 +1,5 @@
 import type { PointerPoint } from './input';
 import { InputHandler } from './input';
-import plotPointsRaw from './assets/a.json?raw';
-
 type PlotPoint = {
   order: number;
   x: number;
@@ -15,9 +13,26 @@ type PlotBounds = {
   maxY: number;
 };
 
-const plotPoints: PlotPoint[] = (JSON.parse(plotPointsRaw) as PlotPoint[])
-  .map((point) => ({ order: point.order, x: point.x, y: point.y }))
-  .sort((a, b) => a.order - b.order);
+const letterJsonModules = import.meta.glob('./assets/letters_json/*.json', {
+  as: 'raw',
+  eager: true,
+});
+
+const loadRandomPlotPoints = (): PlotPoint[] => {
+  const letterJsons = Object.values(letterJsonModules) as string[];
+  if (letterJsons.length === 0) {
+    return [];
+  }
+
+  const raw = letterJsons[Math.floor(Math.random() * letterJsons.length)];
+  try {
+    return (JSON.parse(raw) as PlotPoint[])
+      .map((point) => ({ order: point.order, x: point.x, y: point.y }))
+      .sort((a, b) => a.order - b.order);
+  } catch {
+    return [];
+  }
+};
 
 const computeBounds = (points: PlotPoint[]): PlotBounds => {
   if (points.length === 0) {
@@ -46,12 +61,13 @@ export type PathPoint = {
 };
 
 export class Game {
+  private plotPoints: PlotPoint[] = [];
   private currentPath: PathPoint[] = [];
-  private fadeSeconds = 3;
+  private fadeSeconds = 9;
   private maxPoints = 600;
   private isDrawing = false;
   private currentMousePos = { x: 0, y: 0 };
-  private plotBounds = computeBounds(plotPoints);
+  private plotBounds: PlotBounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
   private scaledPlotPoints: PlotPoint[] = [];
   private lastPlotSize = { width: 0, height: 0 };
   private currentTargetIndex = 0;
@@ -59,6 +75,8 @@ export class Game {
   private hitRadiusScale = 1.5;
 
   constructor(input: InputHandler) {
+    this.plotPoints = loadRandomPlotPoints();
+    this.plotBounds = computeBounds(this.plotPoints);
     input.setCallbacks({
       onStart: (point) => this.startPath(point),
       onMove: (point) => this.extendPath(point),
@@ -94,7 +112,7 @@ export class Game {
   }
 
   setViewportSize(width: number, height: number): void {
-    if (plotPoints.length === 0) {
+    if (this.plotPoints.length === 0) {
       return;
     }
 
@@ -122,7 +140,7 @@ export class Game {
     const offsetY =
       (viewportHeight - boundsHeight * scale) / 2 - this.plotBounds.minY * scale;
 
-    this.scaledPlotPoints = plotPoints.map((point) => ({
+    this.scaledPlotPoints = this.plotPoints.map((point) => ({
       order: point.order,
       x: point.x * scale + offsetX,
       y: point.y * scale + offsetY,
@@ -158,7 +176,7 @@ export class Game {
     }
 
     ctx.strokeStyle = 'rgba(200, 230, 255, 0.9)';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 15;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
 
@@ -172,9 +190,6 @@ export class Game {
     });
     ctx.stroke();
 
-    for (const point of this.currentPath) {
-      this.drawStar(ctx, point.x, point.y);
-    }
   }
 
   private startPath(point: PointerPoint): void {
@@ -195,13 +210,6 @@ export class Game {
     this.currentPath.push({ x: point.x, y: point.y, time: point.time });
     this.tryAdvanceTarget(point);
     this.isDrawing = false;
-  }
-
-  private drawStar(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.beginPath();
-    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
-    ctx.fill();
   }
 
   private renderPlotLines(ctx: CanvasRenderingContext2D): void {
