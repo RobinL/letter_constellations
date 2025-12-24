@@ -1,0 +1,186 @@
+[
+  {
+    "order": 1,
+    "x": 180,
+    "y": 200,
+    "display": "keystone",
+    "note": "Start Black Dot (Top Left)"
+  },
+  {
+    "order": 2,
+    "x": 180,
+    "y": 340,
+    "display": "intermediate",
+    "note": "Left Stem Down"
+  },
+  {
+    "order": 3,
+    "x": 180,
+    "y": 480,
+    "display": "intermediate",
+    "note": "Left Stem Middle"
+  },
+  {
+    "order": 4,
+    "x": 180,
+    "y": 620,
+    "display": "keystone",
+    "note": "Left Stem Lower"
+  },
+  {
+    "order": 5,
+    "x": 180,
+    "y": 760,
+    "display": "intermediate",
+    "note": "Left Stem Down"
+  },
+  {
+    "order": 6,
+    "x": 180,
+    "y": 900,
+    "display": "intermediate",
+    "note": "Left Stem Finish Arrow"
+  },
+  {
+    "order": 7,
+    "x": 180,
+    "y": 380,
+    "display": "keystone",
+    "newStroke": true,
+    "note": "Branch Point 1 (Start Middle Arch)"
+  },
+  {
+    "order": 8,
+    "x": 240,
+    "y": 260,
+    "display": "intermediate",
+    "note": "Curve Up-Right"
+  },
+  {
+    "order": 9,
+    "x": 340,
+    "y": 210,
+    "display": "intermediate",
+    "note": "Arch 1 Top"
+  },
+  {
+    "order": 10,
+    "x": 440,
+    "y": 260,
+    "display": "keystone",
+    "note": "Arch 1 Down-Right"
+  },
+  {
+    "order": 11,
+    "x": 500,
+    "y": 380,
+    "display": "intermediate",
+    "note": "Middle Stem Start"
+  },
+  {
+    "order": 12,
+    "x": 500,
+    "y": 550,
+    "display": "intermediate",
+    "note": "Middle Stem Down"
+  },
+  {
+    "order": 13,
+    "x": 500,
+    "y": 720,
+    "display": "keystone",
+    "note": "Middle Stem Lower"
+  },
+  {
+    "order": 14,
+    "x": 500,
+    "y": 850,
+    "display": "intermediate",
+    "note": "Middle Stem Approach"
+  },
+  {
+    "order": 15,
+    "x": 500,
+    "y": 900,
+    "display": "intermediate",
+    "note": "Middle Stem Finish Arrow"
+  },
+  {
+    "order": 16,
+    "x": 500,
+    "y": 380,
+    "display": "keystone",
+    "newStroke": true,
+    "note": "Branch Point 2 (Start Right Arch)"
+  },
+  {
+    "order": 17,
+    "x": 560,
+    "y": 260,
+    "display": "intermediate",
+    "note": "Curve Up-Right"
+  },
+  {
+    "order": 18,
+    "x": 660,
+    "y": 210,
+    "display": "intermediate",
+    "note": "Arch 2 Top"
+  },
+  {
+    "order": 19,
+    "x": 760,
+    "y": 260,
+    "display": "keystone",
+    "note": "Arch 2 Down-Right"
+  },
+  {
+    "order": 20,
+    "x": 820,
+    "y": 380,
+    "display": "intermediate",
+    "note": "Right Stem Start"
+  },
+  {
+    "order": 21,
+    "x": 820,
+    "y": 510,
+    "display": "intermediate",
+    "note": "Right Stem Down"
+  },
+  {
+    "order": 22,
+    "x": 820,
+    "y": 640,
+    "display": "keystone",
+    "note": "Right Stem Middle"
+  },
+  {
+    "order": 23,
+    "x": 820,
+    "y": 770,
+    "display": "intermediate",
+    "note": "Right Stem Lower"
+  },
+  {
+    "order": 24,
+    "x": 820,
+    "y": 850,
+    "display": "intermediate",
+    "note": "Right Stem Approach"
+  },
+  {
+    "order": 25,
+    "x": 820,
+    "y": 890,
+    "display": "keystone",
+    "note": "Right Stem Arrow Body"
+  },
+  {
+    "order": 26,
+    "x": 820,
+    "y": 910,
+    "display": "intermediate",
+    "note": "Right Stem Finish"
+  }
+]

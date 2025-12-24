@@ -1,0 +1,115 @@
+[
+  {
+    "order": 1,
+    "x": 250,
+    "y": 200,
+    "display": "keystone",
+    "note": "Start Black Dot (Top Left)"
+  },
+  {
+    "order": 2,
+    "x": 250,
+    "y": 340,
+    "display": "intermediate",
+    "note": "Left Stem Down"
+  },
+  {
+    "order": 3,
+    "x": 250,
+    "y": 480,
+    "display": "intermediate",
+    "note": "Left Stem Middle"
+  },
+  {
+    "order": 4,
+    "x": 250,
+    "y": 620,
+    "display": "keystone",
+    "note": "Left Stem Lower"
+  },
+  {
+    "order": 5,
+    "x": 250,
+    "y": 760,
+    "display": "intermediate",
+    "note": "Left Stem Down"
+  },
+  {
+    "order": 6,
+    "x": 250,
+    "y": 900,
+    "display": "intermediate",
+    "note": "Left Stem Finish Arrow"
+  },
+  {
+    "order": 7,
+    "x": 250,
+    "y": 450,
+    "display": "keystone",
+    "newStroke": true,
+    "note": "Branch Point (Start Arch)"
+  },
+  {
+    "order": 8,
+    "x": 300,
+    "y": 320,
+    "display": "intermediate",
+    "note": "Curve Up-Right"
+  },
+  {
+    "order": 9,
+    "x": 400,
+    "y": 240,
+    "display": "intermediate",
+    "note": "Arch Top Left"
+  },
+  {
+    "order": 10,
+    "x": 500,
+    "y": 210,
+    "display": "keystone",
+    "note": "Arch Top Center"
+  },
+  {
+    "order": 11,
+    "x": 600,
+    "y": 240,
+    "display": "intermediate",
+    "note": "Arch Top Right"
+  },
+  {
+    "order": 12,
+    "x": 700,
+    "y": 320,
+    "display": "intermediate",
+    "note": "Curve Down-Right"
+  },
+  {
+    "order": 13,
+    "x": 750,
+    "y": 450,
+    "display": "keystone",
+    "note": "Right Stem Start"
+  },
+  {
+    "order": 14,
+    "x": 750,
+    "y": 600,
+    "display": "intermediate",
+    "note": "Right Stem Down"
+  },
+  {
+    "order": 15,
+    "x": 750,
+    "y": 750,
+    "display": "intermediate",
+    "note": "Right Stem Approach"
+  },
+  {
+    "order": 16,
+    "x": 750,
+    "y": 900,
+    "display": "keystone",
+    "note": "Right Stem Finish Arrow"
+  }
+]

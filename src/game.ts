@@ -22,19 +22,36 @@ type StrokeSegment = {
   to: number;
 };
 
-const letterData = Object.values(letterModules)
-  .map((mod) => (mod as { default: PlotPoint[] }).default)
-  .filter((points): points is PlotPoint[] => Array.isArray(points));
+type LetterPlot = {
+  name: string;
+  points: PlotPoint[];
+};
 
-const loadRandomPlotPoints = (): PlotPoint[] => {
+const letterData = Object.entries(letterModules)
+  .map(([path, mod]) => {
+    const points = (mod as { default: PlotPoint[] }).default;
+    if (!Array.isArray(points)) {
+      return null;
+    }
+    const fileName = path.split('/').pop() ?? 'unknown';
+    const name = fileName.replace(/\.json$/i, '');
+    return { name, points };
+  })
+  .filter((entry): entry is LetterPlot => entry !== null);
+
+const loadRandomPlotPoints = (): { name: string; points: PlotPoint[] } => {
   if (letterData.length === 0) {
-    return [];
+    return { name: 'unknown', points: [] };
   }
 
-  const data = letterData[Math.floor(Math.random() * letterData.length)] as PlotPoint[];
-  return data
-    .map((point) => ({ order: point.order, x: point.x, y: point.y }))
-    .sort((a, b) => a.order - b.order);
+  const selected = letterData[Math.floor(Math.random() * letterData.length)];
+  console.info('Selected letter:', selected.name);
+  return {
+    name: selected.name,
+    points: selected.points
+      .map((point) => ({ order: point.order, x: point.x, y: point.y }))
+      .sort((a, b) => a.order - b.order),
+  };
 };
 
 const computeBounds = (points: PlotPoint[]): PlotBounds => {
@@ -140,7 +157,8 @@ export class Game {
   private callbacks: GameCallbacks;
 
   constructor(input: InputHandler, callbacks: GameCallbacks = {}) {
-    this.plotPoints = loadRandomPlotPoints();
+    const selection = loadRandomPlotPoints();
+    this.plotPoints = selection.points;
     this.plotBounds = computeBounds(this.plotPoints);
     this.callbacks = callbacks;
     input.setCallbacks({
@@ -496,7 +514,8 @@ export class Game {
   }
 
   private resetForNewLetter(): void {
-    this.plotPoints = loadRandomPlotPoints();
+    const selection = loadRandomPlotPoints();
+    this.plotPoints = selection.points;
     this.plotBounds = computeBounds(this.plotPoints);
     this.scaledPlotPoints = [];
     this.currentTargetIndex = 0;
