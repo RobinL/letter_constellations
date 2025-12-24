@@ -1,0 +1,191 @@
+[
+  {
+    "order": 1,
+    "x": 648,
+    "y": 229,
+    "display": "keystone",
+    "note": "Start Black Dot"
+  },
+  {
+    "order": 2,
+    "x": 537,
+    "y": 161,
+    "display": "intermediate",
+    "note": "Curve Up-Left"
+  },
+  {
+    "order": 3,
+    "x": 380,
+    "y": 160,
+    "display": "intermediate",
+    "note": "Top Curve"
+  },
+  {
+    "order": 4,
+    "x": 280,
+    "y": 200,
+    "display": "keystone",
+    "note": "Top Left Curve"
+  },
+  {
+    "order": 5,
+    "x": 200,
+    "y": 280,
+    "display": "intermediate",
+    "note": "Left Side High"
+  },
+  {
+    "order": 6,
+    "x": 150,
+    "y": 400,
+    "display": "intermediate",
+    "note": "Left Side Mid"
+  },
+  {
+    "order": 7,
+    "x": 150,
+    "y": 520,
+    "display": "keystone",
+    "note": "Left Side Low"
+  },
+  {
+    "order": 8,
+    "x": 200,
+    "y": 640,
+    "display": "intermediate",
+    "note": "Bottom Left Turn"
+  },
+  {
+    "order": 9,
+    "x": 300,
+    "y": 720,
+    "display": "intermediate",
+    "note": "Bottom Curve"
+  },
+  {
+    "order": 10,
+    "x": 450,
+    "y": 730,
+    "display": "keystone",
+    "note": "Bottom Right Curve"
+  },
+  {
+    "order": 11,
+    "x": 580,
+    "y": 680,
+    "display": "intermediate",
+    "note": "Approach Stem"
+  },
+  {
+    "order": 12,
+    "x": 660,
+    "y": 600,
+    "display": "intermediate",
+    "note": "Join Stem"
+  },
+  {
+    "order": 13,
+    "x": 680,
+    "y": 500,
+    "display": "keystone",
+    "note": "Connect to Stem (Go Up)"
+  },
+  {
+    "order": 14,
+    "x": 680,
+    "y": 380,
+    "display": "intermediate",
+    "note": "Stem Up"
+  },
+  {
+    "order": 15,
+    "x": 680,
+    "y": 260,
+    "display": "intermediate",
+    "note": "Stem Up"
+  },
+  {
+    "order": 16,
+    "x": 679,
+    "y": 168,
+    "display": "keystone",
+    "note": "Top of Stem"
+  },
+  {
+    "order": 17,
+    "x": 680,
+    "y": 300,
+    "display": "intermediate",
+    "note": "Stem Down (Retrace)"
+  },
+  {
+    "order": 18,
+    "x": 680,
+    "y": 500,
+    "display": "intermediate",
+    "note": "Stem Down Mid"
+  },
+  {
+    "order": 19,
+    "x": 680,
+    "y": 700,
+    "display": "keystone",
+    "note": "Stem Down Low"
+  },
+  {
+    "order": 20,
+    "x": 680,
+    "y": 820,
+    "display": "intermediate",
+    "note": "Stem Bottom Approach"
+  },
+  {
+    "order": 21,
+    "x": 679,
+    "y": 966,
+    "display": "intermediate",
+    "note": "Stem Bottom Approach"
+  },
+  {
+    "order": 22,
+    "x": 680,
+    "y": 1136,
+    "display": "intermediate",
+    "note": "Stem Bottom Sharp Turn"
+  },
+  {
+    "order": 23,
+    "x": 745,
+    "y": 997,
+    "display": "keystone",
+    "note": "Kick Up-Right"
+  },
+  {
+    "order": 24,
+    "x": 802,
+    "y": 871,
+    "display": "intermediate",
+    "note": "Kick Diagonal"
+  },
+  {
+    "order": 25,
+    "x": 860,
+    "y": 760,
+    "display": "intermediate",
+    "note": "Kick Arrow Body"
+  },
+  {
+    "order": 26,
+    "x": 920,
+    "y": 700,
+    "display": "keystone",
+    "note": "Kick Arrow Head"
+  },
+  {
+    "order": 27,
+    "x": 950,
+    "y": 670,
+    "display": "intermediate",
+    "note": "Finish Tip"
+  }
+]

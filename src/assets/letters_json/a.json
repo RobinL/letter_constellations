@@ -1,8 +1,8 @@
 [
   {
     "order": 1,
-    "x": 725,
-    "y": 320,
+    "x": 771,
+    "y": 353,
     "display": "keystone",
     "note": "Start at Black Dot"
   },
@@ -92,107 +92,93 @@
   },
   {
     "order": 14,
-    "x": 610,
+    "x": 622,
     "y": 750,
     "display": "intermediate",
     "note": "Curve Up-Right"
   },
   {
     "order": 15,
-    "x": 680,
-    "y": 690,
+    "x": 714,
+    "y": 694,
     "display": "intermediate",
     "note": "Curve Up-Right"
   },
   {
     "order": 16,
-    "x": 720,
-    "y": 610,
+    "x": 769,
+    "y": 614,
     "display": "keystone",
     "note": "Closing the Loop"
   },
   {
     "order": 17,
-    "x": 740,
-    "y": 530,
+    "x": 782,
+    "y": 532,
     "display": "intermediate",
     "note": "Loop End"
   },
   {
     "order": 18,
-    "x": 758,
-    "y": 431,
+    "x": 805,
+    "y": 411,
     "display": "intermediate",
     "note": "Loop End"
   },
   {
     "order": 19,
-    "x": 779,
-    "y": 266,
-    "display": "intermediate",
-    "note": "Loop End"
-  },
-  {
-    "order": 20,
     "x": 810,
-    "y": 180,
+    "y": 256,
     "display": "intermediate",
     "newStroke": true,
     "note": "Lift Pen -> Top of Stem"
   },
   {
-    "order": 21,
+    "order": 20,
     "x": 810,
-    "y": 265,
+    "y": 309,
     "display": "keystone",
     "note": "Stem Down"
   },
   {
-    "order": 22,
+    "order": 21,
     "x": 810,
     "y": 350,
     "display": "intermediate",
     "note": "Stem Down"
   },
   {
-    "order": 23,
+    "order": 22,
     "x": 810,
     "y": 435,
     "display": "intermediate",
     "note": "Stem Down"
   },
   {
-    "order": 24,
+    "order": 23,
     "x": 810,
     "y": 520,
     "display": "keystone",
     "note": "Stem Center"
   },
   {
-    "order": 25,
+    "order": 24,
     "x": 810,
     "y": 605,
     "display": "intermediate",
     "note": "Stem Down"
   },
   {
-    "order": 26,
-    "x": 810,
+    "order": 25,
+    "x": 805,
     "y": 690,
-    "display": "intermediate",
-    "note": "Stem Down"
-  },
-  {
-    "order": 27,
-    "x": 810,
-    "y": 775,
     "display": "keystone",
     "note": "Stem Bottom"
   },
   {
-    "order": 28,
-    "x": 810,
-    "y": 860,
+    "order": 26,
+    "x": 800,
+    "y": 778,
     "display": "intermediate",
     "note": "Stem Finish"
   }

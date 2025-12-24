@@ -1,0 +1,149 @@
+[
+  {
+    "order": 1,
+    "x": 710,
+    "y": 220,
+    "display": "keystone",
+    "note": "Start Black Dot"
+  },
+  {
+    "order": 2,
+    "x": 640,
+    "y": 170,
+    "display": "intermediate",
+    "note": "Curve Up-Left"
+  },
+  {
+    "order": 3,
+    "x": 560,
+    "y": 140,
+    "display": "intermediate",
+    "note": "Curve Up-Left"
+  },
+  {
+    "order": 4,
+    "x": 470,
+    "y": 140,
+    "display": "keystone",
+    "note": "Top Center"
+  },
+  {
+    "order": 5,
+    "x": 390,
+    "y": 170,
+    "display": "intermediate",
+    "note": "Curve Down-Left"
+  },
+  {
+    "order": 6,
+    "x": 320,
+    "y": 230,
+    "display": "intermediate",
+    "note": "Top Left Curve"
+  },
+  {
+    "order": 7,
+    "x": 280,
+    "y": 310,
+    "display": "keystone",
+    "note": "Top Left Turn"
+  },
+  {
+    "order": 8,
+    "x": 290,
+    "y": 400,
+    "display": "intermediate",
+    "note": "Curve In"
+  },
+  {
+    "order": 9,
+    "x": 340,
+    "y": 480,
+    "display": "intermediate",
+    "note": "Start Diagonal"
+  },
+  {
+    "order": 10,
+    "x": 420,
+    "y": 550,
+    "display": "keystone",
+    "note": "Crossing Middle"
+  },
+  {
+    "order": 11,
+    "x": 510,
+    "y": 610,
+    "display": "intermediate",
+    "note": "Crossing Middle"
+  },
+  {
+    "order": 12,
+    "x": 600,
+    "y": 660,
+    "display": "intermediate",
+    "note": "Crossing Middle"
+  },
+  {
+    "order": 13,
+    "x": 680,
+    "y": 720,
+    "display": "keystone",
+    "note": "Right Side Turn"
+  },
+  {
+    "order": 14,
+    "x": 730,
+    "y": 790,
+    "display": "intermediate",
+    "note": "Right Side Curve"
+  },
+  {
+    "order": 15,
+    "x": 730,
+    "y": 870,
+    "display": "intermediate",
+    "note": "Bottom Right"
+  },
+  {
+    "order": 16,
+    "x": 680,
+    "y": 930,
+    "display": "keystone",
+    "note": "Bottom Curve Start"
+  },
+  {
+    "order": 17,
+    "x": 590,
+    "y": 950,
+    "display": "intermediate",
+    "note": "Bottom Center"
+  },
+  {
+    "order": 18,
+    "x": 500,
+    "y": 940,
+    "display": "intermediate",
+    "note": "Bottom Curve Left"
+  },
+  {
+    "order": 19,
+    "x": 404,
+    "y": 930,
+    "display": "keystone",
+    "note": "Bottom Left Turn"
+  },
+  {
+    "order": 20,
+    "x": 331,
+    "y": 905,
+    "display": "intermediate",
+    "note": "Curve Up-Left"
+  },
+  {
+    "order": 21,
+    "x": 247,
+    "y": 858,
+    "display": "keystone",
+    "note": "Arrow Head"
+  }
+]

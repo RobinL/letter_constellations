@@ -36,21 +36,21 @@
   },
   {
     "order": 6,
-    "x": 220,
+    "x": 223,
     "y": 420,
     "display": "intermediate",
     "note": "Curve Down-Left"
   },
   {
     "order": 7,
-    "x": 160,
+    "x": 183,
     "y": 550,
     "display": "keystone",
     "note": "Leftmost Curve"
   },
   {
     "order": 8,
-    "x": 200,
+    "x": 207,
     "y": 680,
     "display": "intermediate",
     "note": "Curve Down-Right"
