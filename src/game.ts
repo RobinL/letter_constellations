@@ -1,5 +1,8 @@
 import type { PointerPoint } from './input';
 import { InputHandler } from './input';
+import letterA from './assets/letters_json/a.json';
+import letterB from './assets/letters_json/b.json';
+
 type PlotPoint = {
   order: number;
   x: number;
@@ -13,25 +16,17 @@ type PlotBounds = {
   maxY: number;
 };
 
-const letterJsonModules = import.meta.glob('./assets/letters_json/*.json', {
-  as: 'raw',
-  eager: true,
-});
+const letterData = [letterA, letterB];
 
 const loadRandomPlotPoints = (): PlotPoint[] => {
-  const letterJsons = Object.values(letterJsonModules) as string[];
-  if (letterJsons.length === 0) {
+  if (letterData.length === 0) {
     return [];
   }
 
-  const raw = letterJsons[Math.floor(Math.random() * letterJsons.length)];
-  try {
-    return (JSON.parse(raw) as PlotPoint[])
-      .map((point) => ({ order: point.order, x: point.x, y: point.y }))
-      .sort((a, b) => a.order - b.order);
-  } catch {
-    return [];
-  }
+  const data = letterData[Math.floor(Math.random() * letterData.length)] as PlotPoint[];
+  return data
+    .map((point) => ({ order: point.order, x: point.x, y: point.y }))
+    .sort((a, b) => a.order - b.order);
 };
 
 const computeBounds = (points: PlotPoint[]): PlotBounds => {
