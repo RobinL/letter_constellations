@@ -12,10 +12,10 @@ export type TrailPoint = {
   time: number;
 };
 
-const MAX_PARTICLES = 24576;
+const MAX_PARTICLES = 16384;
 const FLOATS_PER_PARTICLE = 8; // pos0x,pos0y, velx,vely, spawn,life, sizePx, seed
 const BYTES_PER_PARTICLE = FLOATS_PER_PARTICLE * 4;
-const MAX_SPAWNS_PER_FRAME = 1536;
+const MAX_SPAWNS_PER_FRAME = 1024;
 const MAX_DOTS = 512;
 const FLOATS_PER_DOT = 8; // posx,posy,sizePx,state, seed,...
 const BYTES_PER_DOT = FLOATS_PER_DOT * 4;
@@ -23,6 +23,10 @@ const KIND_DUST = 0;
 const KIND_SPARK = 1;
 const KIND_STAR = 2;
 const KIND_COMET = 3;
+const PARTICLE_RATE_SCALE = 0.7;
+const PARTICLE_SIZE_SCALE = 0.8;
+const MAX_PARTICLE_SIZE_CSS = 12;
+const COMET_CHANCE = 0.03;
 
 function smoothstep(edge0: number, edge1: number, x: number): number {
   const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
@@ -280,9 +284,7 @@ export class SparkleRenderer {
     }
 
     const nowSec = (performance.now() - this.startTimeMs) / 1000;
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
-    const cssW = Math.max(1, this.canvas.width / dpr);
-    const cssH = Math.max(1, this.canvas.height / dpr);
+    const { dpr, cssW, cssH } = this.getCanvasMetrics();
 
     const baseRadius = Math.max(10, radius * 1.3);
 
@@ -344,9 +346,7 @@ export class SparkleRenderer {
     }
 
     // Convert CSS px -> normalized UV
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
-    const cssW = Math.max(1, this.canvas.width / dpr);
-    const cssH = Math.max(1, this.canvas.height / dpr);
+    const { dpr, cssW, cssH } = this.getCanvasMetrics();
 
     const nx = Math.max(0, Math.min(1, x / cssW));
     const ny = Math.max(0, Math.min(1, y / cssH));
@@ -371,14 +371,14 @@ export class SparkleRenderer {
       this.haloPhase += dt * (1.2 + speedBoost * 5.5);
 
       // small, steady emission; increases when moving fast
-      const haloRate = (18 + speedBoost * 140) * this.mouseRamp; // dust/sec
+      const haloRate = (18 + speedBoost * 140) * this.mouseRamp * PARTICLE_RATE_SCALE; // dust/sec
       this.haloAccumulator += haloRate * dt;
 
       let haloCount = Math.floor(this.haloAccumulator);
       this.haloAccumulator -= haloCount;
 
       // hard cap keeps perf stable
-      haloCount = Math.min(haloCount, 12);
+      haloCount = Math.min(haloCount, 10);
 
       const radius = 0.014 + 0.012 * speedBoost;
 
@@ -394,8 +394,8 @@ export class SparkleRenderer {
         const vy = Math.cos(ang) * tang + oy * 0.8;
 
         const life = 0.35 + this.rand01() * 0.55;
-        const sizeCss = 0.9 + this.rand01() * 2.2;
-        const sizePx = sizeCss * dpr;
+        const sizeCss = (0.9 + this.rand01() * 2.2) * PARTICLE_SIZE_SCALE;
+        const sizePx = Math.min(sizeCss, MAX_PARTICLE_SIZE_CSS) * dpr;
 
         this.queueParticle(
           curPos.x + ox,
@@ -442,12 +442,12 @@ export class SparkleRenderer {
 
     // Continuous directional emission
     if (dt > 0) {
-      const rate = (120 + speedBoost * 1700) * this.mouseRamp; // sparks/sec
+      const rate = (120 + speedBoost * 1700) * this.mouseRamp * PARTICLE_RATE_SCALE; // sparks/sec
       this.sparkAccumulator += rate * dt;
 
       let emitCount = Math.floor(this.sparkAccumulator);
       this.sparkAccumulator -= emitCount;
-      emitCount = Math.min(emitCount, 180);
+      emitCount = Math.min(emitCount, 120);
 
       if (emitCount > 0) {
         // Direction basis from cursor velocity
@@ -490,17 +490,17 @@ export class SparkleRenderer {
           const vx = rx * vMag + perpX * side * vMag;
           const vy = ry * vMag + perpY * side * vMag;
 
-          const isComet = speedBoost > 0.75 && this.rand01() < 0.06;
+          const isComet = speedBoost > 0.75 && this.rand01() < COMET_CHANCE;
           const kind = isComet ? KIND_COMET : KIND_SPARK;
 
           const life = isComet
             ? (0.45 + this.rand01() * 0.55)
             : (0.20 + this.rand01() * 0.38 + speedBoost * 0.18);
 
-          const sizeCss = isComet
+          const sizeCss = (isComet
             ? (6.0 + this.rand01() * 10.0 + speedBoost * 10.0)
-            : (1.4 + this.rand01() * 3.4 + speedBoost * 8.0);
-          const sizePx = sizeCss * dpr;
+            : (1.4 + this.rand01() * 3.4 + speedBoost * 8.0)) * PARTICLE_SIZE_SCALE;
+          const sizePx = Math.min(sizeCss, MAX_PARTICLE_SIZE_CSS) * dpr;
 
           this.queueParticle(px + jx, py + jy, vx, vy, nowSec, life, sizePx, this.makeSeed(kind));
         }
@@ -511,12 +511,12 @@ export class SparkleRenderer {
     if (dt > 0 && trailPoints.length > 0) {
       const trailStrength = Math.min(1, trailPoints.length / 160);
       const base = 45 + 160 * trailStrength;
-      const rate = base * (0.25 + 0.75 * this.mouseRamp); // dust/sec
+      const rate = base * (0.25 + 0.75 * this.mouseRamp) * PARTICLE_RATE_SCALE; // dust/sec
       this.dustAccumulator += rate * dt;
 
       let dustCount = Math.floor(this.dustAccumulator);
       this.dustAccumulator -= dustCount;
-      dustCount = Math.min(dustCount, 60);
+      dustCount = Math.min(dustCount, 45);
 
       for (let i = 0; i < dustCount; i++) {
         const p = trailPoints[(this.rand01() * trailPoints.length) | 0];
@@ -529,8 +529,8 @@ export class SparkleRenderer {
         const vy = Math.sin(a) * drift;
 
         const life = 0.45 + this.rand01() * 1.2;
-        const sizeCss = 0.9 + this.rand01() * 2.8;
-        const sizePx = sizeCss * dpr;
+        const sizeCss = (0.9 + this.rand01() * 2.8) * PARTICLE_SIZE_SCALE;
+        const sizePx = Math.min(sizeCss, MAX_PARTICLE_SIZE_CSS) * dpr;
 
         this.queueParticle(tx, ty, vx, vy, nowSec, life, sizePx, this.makeSeed(KIND_DUST));
       }
@@ -622,6 +622,13 @@ export class SparkleRenderer {
     });
   }
 
+  private getCanvasMetrics(): { dpr: number; cssW: number; cssH: number } {
+    const cssW = Math.max(1, this.canvas.clientWidth || this.canvas.width);
+    const cssH = Math.max(1, this.canvas.clientHeight || this.canvas.height);
+    const dpr = this.canvas.width / cssW;
+    return { dpr: Math.max(0.5, dpr), cssW, cssH };
+  }
+
   // -------- internals --------
 
   private rand01(): number {
@@ -708,7 +715,7 @@ export class SparkleRenderer {
   }
 
   private emitRadialBurst(nowSec: number, pos: { x: number; y: number }, dpr: number, count: number): void {
-    const n = Math.min(count, MAX_SPAWNS_PER_FRAME);
+    const n = Math.min(Math.floor(count * PARTICLE_RATE_SCALE), MAX_SPAWNS_PER_FRAME);
 
     for (let i = 0; i < n; i++) {
       const a = this.rand01() * Math.PI * 2;
@@ -717,8 +724,8 @@ export class SparkleRenderer {
       const vy = Math.sin(a) * v;
 
       const life = 0.32 + this.rand01() * 0.75;
-      const sizeCss = 2.2 + this.rand01() * 7.0;
-      const sizePx = sizeCss * dpr;
+      const sizeCss = (2.2 + this.rand01() * 7.0) * PARTICLE_SIZE_SCALE;
+      const sizePx = Math.min(sizeCss, MAX_PARTICLE_SIZE_CSS) * dpr;
 
       this.queueParticle(pos.x, pos.y, vx, vy, nowSec, life, sizePx, this.makeSeed(KIND_SPARK));
     }
@@ -738,7 +745,7 @@ export class SparkleRenderer {
     const px = -dy;
     const py = dx;
 
-    const n = Math.min(count, MAX_SPAWNS_PER_FRAME);
+    const n = Math.min(Math.floor(count * PARTICLE_RATE_SCALE), MAX_SPAWNS_PER_FRAME);
 
     for (let i = 0; i < n; i++) {
       const cone = 0.35;
@@ -755,8 +762,8 @@ export class SparkleRenderer {
       const vy = ry * v + py * side;
 
       const life = 0.28 + this.rand01() * 0.6;
-      const sizeCss = 2.0 + this.rand01() * 8.5;
-      const sizePx = sizeCss * dpr;
+      const sizeCss = (2.0 + this.rand01() * 8.5) * PARTICLE_SIZE_SCALE;
+      const sizePx = Math.min(sizeCss, MAX_PARTICLE_SIZE_CSS) * dpr;
 
       this.queueParticle(pos.x, pos.y, vx, vy, nowSec, life, sizePx, this.makeSeed(KIND_SPARK));
     }
@@ -771,8 +778,9 @@ export class SparkleRenderer {
     lifeMin: number,
     lifeMax: number
   ): void {
-    const sizeCss = sizeCssMin + this.rand01() * (sizeCssMax - sizeCssMin);
-    const sizePx = sizeCss * dpr;
+    const sizeCss =
+      (sizeCssMin + this.rand01() * (sizeCssMax - sizeCssMin)) * PARTICLE_SIZE_SCALE;
+    const sizePx = Math.min(sizeCss, MAX_PARTICLE_SIZE_CSS * 1.5) * dpr;
 
     const life = lifeMin + this.rand01() * (lifeMax - lifeMin);
 
@@ -793,7 +801,7 @@ export class SparkleRenderer {
   }
 
   private emitDustRing(nowSec: number, pos: { x: number; y: number }, dpr: number, count: number): void {
-    const n = Math.min(count, 40);
+    const n = Math.min(Math.floor(count * PARTICLE_RATE_SCALE), 30);
     const radius = 0.018;
 
     for (let i = 0; i < n; i++) {
@@ -806,7 +814,8 @@ export class SparkleRenderer {
       const vy = oy * drift * 30;
 
       const life = 0.5 + this.rand01() * 0.7;
-      const sizePx = (0.8 + this.rand01() * 2.0) * dpr;
+      const sizeCss = (0.8 + this.rand01() * 2.0) * PARTICLE_SIZE_SCALE;
+      const sizePx = Math.min(sizeCss, MAX_PARTICLE_SIZE_CSS) * dpr;
 
       this.queueParticle(
         pos.x + ox,
