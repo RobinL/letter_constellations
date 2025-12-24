@@ -1,3 +1,5 @@
+import type { QualitySettings } from './performance-monitor';
+
 export type CanvasSize = {
   width: number;
   height: number;
@@ -6,8 +8,8 @@ export type CanvasSize = {
 
 export class CanvasManager {
   private size: CanvasSize;
-  private readonly auroraScale = 0.66;
-  private readonly sparkleScale = 1.0;
+  private auroraScale = 0.5;
+  private sparkleScale = 0.75;
 
   constructor(
     private auroraCanvas: HTMLCanvasElement,
@@ -15,6 +17,11 @@ export class CanvasManager {
     private sparkleCanvas?: HTMLCanvasElement
   ) {
     this.size = { width: 0, height: 0, dpr: 1 };
+  }
+
+  updateQuality(settings: QualitySettings): void {
+    this.auroraScale = settings.auroraScale;
+    this.sparkleScale = settings.sparkleScale;
   }
 
   resize(): CanvasSize {

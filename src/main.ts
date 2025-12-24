@@ -4,6 +4,7 @@ import { SparkleRenderer } from './sparkle-renderer';
 import { CanvasManager } from './canvas-manager';
 import { Game } from './game';
 import { InputHandler } from './input';
+import { PerformanceMonitor } from './performance-monitor';
 
 type ItemEntry = {
   name: string;
@@ -352,7 +353,12 @@ async function main() {
   let renderer: AuroraRenderer | null = null;
   let sparkleRenderer: SparkleRenderer | null = null;
   let game: Game | null = null;
+  const performanceMonitor = new PerformanceMonitor();
   const canvasManager = new CanvasManager(auroraCanvas, gameCanvas, sparkleCanvas);
+  
+  // Apply initial quality settings
+  canvasManager.updateQuality(performanceMonitor.getQualitySettings());
+  
   const gameContext = gameCanvas.getContext('2d');
 
   if (!gameContext) {
@@ -374,6 +380,13 @@ async function main() {
       sparkleRenderer.resize(sparkleCanvas.width, sparkleCanvas.height);
     }
   };
+  
+  // Set up quality change handler
+  performanceMonitor.setOnQualityChange((settings) => {
+    canvasManager.updateQuality(settings);
+    resize(); // Reapply sizes with new quality
+  });
+  
   resize();
   window.addEventListener('resize', resize);
 
@@ -433,6 +446,9 @@ async function main() {
   let lastTime = performance.now();
   let auroraFrame = 0;
   function animate(currentTime: number) {
+    // Record frame for performance monitoring
+    performanceMonitor.recordFrame();
+    
     const deltaTime = (currentTime - lastTime) / 1000; // seconds
     lastTime = currentTime;
 
