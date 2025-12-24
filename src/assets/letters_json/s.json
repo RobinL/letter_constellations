@@ -71,22 +71,22 @@
   },
   {
     "order": 11,
-    "x": 510,
-    "y": 610,
+    "x": 529,
+    "y": 597,
     "display": "intermediate",
     "note": "Crossing Middle"
   },
   {
     "order": 12,
-    "x": 600,
-    "y": 660,
+    "x": 617,
+    "y": 628,
     "display": "intermediate",
     "note": "Crossing Middle"
   },
   {
     "order": 13,
-    "x": 680,
-    "y": 720,
+    "x": 710,
+    "y": 699,
     "display": "keystone",
     "note": "Right Side Turn"
   },
