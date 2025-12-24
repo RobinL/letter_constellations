@@ -1,0 +1,184 @@
+[
+  {
+    "order": 1,
+    "x": 740,
+    "y": 260,
+    "display": "keystone",
+    "note": "Start Black Dot"
+  },
+  {
+    "order": 2,
+    "x": 670,
+    "y": 200,
+    "display": "intermediate",
+    "note": "Curve Up-Left"
+  },
+  {
+    "order": 3,
+    "x": 590,
+    "y": 160,
+    "display": "intermediate",
+    "note": "Curve Up-Left"
+  },
+  {
+    "order": 4,
+    "x": 500,
+    "y": 150,
+    "display": "keystone",
+    "note": "Top Center"
+  },
+  {
+    "order": 5,
+    "x": 410,
+    "y": 160,
+    "display": "intermediate",
+    "note": "Curve Down-Left"
+  },
+  {
+    "order": 6,
+    "x": 330,
+    "y": 200,
+    "display": "intermediate",
+    "note": "Curve Down-Left"
+  },
+  {
+    "order": 7,
+    "x": 260,
+    "y": 260,
+    "display": "keystone",
+    "note": "Top Left Curve"
+  },
+  {
+    "order": 8,
+    "x": 200,
+    "y": 330,
+    "display": "intermediate",
+    "note": "Left Side High"
+  },
+  {
+    "order": 9,
+    "x": 160,
+    "y": 410,
+    "display": "intermediate",
+    "note": "Left Side Mid"
+  },
+  {
+    "order": 10,
+    "x": 150,
+    "y": 500,
+    "display": "keystone",
+    "note": "Left Center"
+  },
+  {
+    "order": 11,
+    "x": 160,
+    "y": 590,
+    "display": "intermediate",
+    "note": "Left Side Low"
+  },
+  {
+    "order": 12,
+    "x": 200,
+    "y": 670,
+    "display": "intermediate",
+    "note": "Bottom Left Turn"
+  },
+  {
+    "order": 13,
+    "x": 260,
+    "y": 740,
+    "display": "keystone",
+    "note": "Bottom Left Curve"
+  },
+  {
+    "order": 14,
+    "x": 330,
+    "y": 800,
+    "display": "intermediate",
+    "note": "Curve Down-Right"
+  },
+  {
+    "order": 15,
+    "x": 410,
+    "y": 840,
+    "display": "intermediate",
+    "note": "Bottom Curve"
+  },
+  {
+    "order": 16,
+    "x": 500,
+    "y": 850,
+    "display": "keystone",
+    "note": "Bottom Center"
+  },
+  {
+    "order": 17,
+    "x": 590,
+    "y": 840,
+    "display": "intermediate",
+    "note": "Bottom Curve Right"
+  },
+  {
+    "order": 18,
+    "x": 670,
+    "y": 800,
+    "display": "intermediate",
+    "note": "Curve Up-Right"
+  },
+  {
+    "order": 19,
+    "x": 740,
+    "y": 740,
+    "display": "keystone",
+    "note": "Bottom Right Curve"
+  },
+  {
+    "order": 20,
+    "x": 800,
+    "y": 670,
+    "display": "intermediate",
+    "note": "Right Side Low"
+  },
+  {
+    "order": 21,
+    "x": 840,
+    "y": 590,
+    "display": "intermediate",
+    "note": "Right Side Mid"
+  },
+  {
+    "order": 22,
+    "x": 850,
+    "y": 500,
+    "display": "keystone",
+    "note": "Right Center"
+  },
+  {
+    "order": 23,
+    "x": 840,
+    "y": 410,
+    "display": "intermediate",
+    "note": "Right Side High"
+  },
+  {
+    "order": 24,
+    "x": 800,
+    "y": 330,
+    "display": "intermediate",
+    "note": "Approach Top"
+  },
+  {
+    "order": 25,
+    "x": 760,
+    "y": 290,
+    "display": "keystone",
+    "note": "Close Loop"
+  },
+  {
+    "order": 26,
+    "x": 730,
+    "y": 280,
+    "display": "intermediate",
+    "note": "Finish Arrow Tip"
+  }
+]

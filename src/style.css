@@ -148,10 +148,94 @@ html, body {
   accent-color: #ffffff;
 }
 
+.item-tray {
+  position: fixed;
+  left: 50%;
+  bottom: 72px;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  justify-content: center;
+  width: min(90vw, 420px);
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+
+.item-card {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: "Trebuchet MS", "Lucida Sans", Arial, sans-serif;
+  font-size: 12px;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+}
+
+.item-card img {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
+}
+
+.item-card:hover,
+.item-card:focus-visible {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.item-label {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.1;
+}
+
+.item-empty {
+  font-family: "Trebuchet MS", "Lucida Sans", Arial, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 6px 12px;
+}
+
 .mute-button:hover,
 .mute-button:focus-visible {
   background: #ffffff;
   border-color: rgba(255, 255, 255, 0.9);
+}
+
+@media (max-width: 640px) {
+  .item-tray {
+    width: min(94vw, 360px);
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .item-card img {
+    width: 56px;
+    height: 56px;
+  }
+
+  .item-label {
+    font-size: 10px;
+  }
 }
 
 .error-message {

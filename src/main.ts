@@ -5,6 +5,78 @@ import { CanvasManager } from './canvas-manager';
 import { Game } from './game';
 import { InputHandler } from './input';
 
+type ItemEntry = {
+  name: string;
+  label: string;
+  imageUrl: string;
+  audioUrl?: string;
+};
+
+const itemImageModules = import.meta.glob('./assets/items/*/*.png', {
+  eager: true,
+  as: 'url',
+});
+const itemVoiceModules = import.meta.glob('./assets/voice/*/*.webm', {
+  eager: true,
+  as: 'url',
+});
+const alphabetVoiceModules = import.meta.glob('./assets/voice/alphabet/*.webm', {
+  eager: true,
+  as: 'url',
+});
+
+const parseAssetInfo = (path: string): { folder: string; name: string } => {
+  const parts = path.split('/');
+  const fileName = parts[parts.length - 1] ?? '';
+  const folder = parts[parts.length - 2] ?? '';
+  const name = fileName.replace(/\.[^.]+$/, '');
+  return { folder, name };
+};
+
+const itemAudioByLetter = new Map<string, Map<string, string>>();
+for (const [path, url] of Object.entries(itemVoiceModules)) {
+  const { folder, name } = parseAssetInfo(path);
+  if (folder === 'alphabet') {
+    continue;
+  }
+  const normalizedUrl = url as string;
+  if (!itemAudioByLetter.has(folder)) {
+    itemAudioByLetter.set(folder, new Map());
+  }
+  itemAudioByLetter.get(folder)!.set(name, normalizedUrl);
+}
+
+const itemImagesByLetter = new Map<string, ItemEntry[]>();
+for (const [path, url] of Object.entries(itemImageModules)) {
+  const { folder, name } = parseAssetInfo(path);
+  const label = name.replace(/_/g, ' ');
+  const audioUrl = itemAudioByLetter.get(folder)?.get(name);
+  if (!itemImagesByLetter.has(folder)) {
+    itemImagesByLetter.set(folder, []);
+  }
+  itemImagesByLetter.get(folder)!.push({
+    name,
+    label,
+    imageUrl: url as string,
+    audioUrl,
+  });
+}
+
+const alphabetAudioByLetter = new Map<string, string>();
+for (const [path, url] of Object.entries(alphabetVoiceModules)) {
+  const { name } = parseAssetInfo(path);
+  alphabetAudioByLetter.set(name, url as string);
+}
+
+const pickRandomItems = <T,>(items: T[], count: number): T[] => {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, Math.min(count, copy.length));
+};
+
 async function main() {
   const app = document.querySelector<HTMLDivElement>('#app')!;
   const auroraAudioUrl = new URL('./assets/aurora.mp3', import.meta.url).toString();
@@ -86,12 +158,82 @@ async function main() {
   app.appendChild(volumeControl);
   const volumeSlider = volumeControl.querySelector<HTMLInputElement>('#volume-slider')!;
   chimeAudio.volume = Math.min(1, Number(volumeSlider.value));
+  const voiceAudioCache = new Map<string, HTMLAudioElement>();
+  const voiceAudioElements = new Set<HTMLAudioElement>();
+  let activeVoiceAudio: HTMLAudioElement | null = null;
+  let voiceSequenceId = 0;
+  let pendingLetterAudioUrl: string | null = null;
+
+  const getVoiceAudio = (url: string): HTMLAudioElement => {
+    let audio = voiceAudioCache.get(url);
+    if (!audio) {
+      audio = new Audio(url);
+      audio.preload = 'auto';
+      voiceAudioCache.set(url, audio);
+      voiceAudioElements.add(audio);
+    }
+    audio.volume = Math.min(1, Number(volumeSlider.value));
+    audio.muted = auroraAudio.muted;
+    return audio;
+  };
+
+  const stopActiveVoice = () => {
+    if (activeVoiceAudio) {
+      activeVoiceAudio.pause();
+      activeVoiceAudio.currentTime = 0;
+    }
+  };
+
+  const playVoiceSequence = async (urls: string[]) => {
+    if (urls.length === 0) {
+      return;
+    }
+    const sequenceId = ++voiceSequenceId;
+    stopActiveVoice();
+    for (const url of urls) {
+      if (sequenceId !== voiceSequenceId) {
+        return;
+      }
+      const audio = getVoiceAudio(url);
+      activeVoiceAudio = audio;
+      audio.currentTime = 0;
+      try {
+        await audio.play();
+      } catch {
+        return;
+      }
+      await new Promise<void>((resolve) => {
+        const handleEnded = () => {
+          audio.removeEventListener('ended', handleEnded);
+          audio.removeEventListener('error', handleEnded);
+          resolve();
+        };
+        audio.addEventListener('ended', handleEnded);
+        audio.addEventListener('error', handleEnded);
+      });
+    }
+  };
+
+  const requestLetterSound = (letter: string) => {
+    const letterUrl = alphabetAudioByLetter.get(letter);
+    if (!letterUrl) {
+      return;
+    }
+    if (!userHasInteracted) {
+      pendingLetterAudioUrl = letterUrl;
+      return;
+    }
+    void playVoiceSequence([letterUrl]);
+  };
 
   const updateMuteButton = () => {
     const isMuted = auroraAudio.muted;
     muteButton.textContent = isMuted ? 'Unmute' : 'Mute';
     muteButton.setAttribute('aria-pressed', String(isMuted));
     chimeAudio.muted = isMuted;
+    for (const audio of voiceAudioElements) {
+      audio.muted = isMuted;
+    }
   };
   updateMuteButton();
 
@@ -113,6 +255,11 @@ async function main() {
   const startAudioOnFirstInteraction = () => {
     userHasInteracted = true;
     attemptPlay();
+    if (pendingLetterAudioUrl) {
+      const letterUrl = pendingLetterAudioUrl;
+      pendingLetterAudioUrl = null;
+      void playVoiceSequence([letterUrl]);
+    }
   };
   const firstInteractionOptions: AddEventListenerOptions = { once: true, capture: true };
   document.addEventListener('pointerdown', startAudioOnFirstInteraction, firstInteractionOptions);
@@ -135,7 +282,61 @@ async function main() {
       gainNode.gain.value = Number(volumeSlider.value);
     }
     chimeAudio.volume = Math.min(1, Number(volumeSlider.value));
+    const voiceVolume = Math.min(1, Number(volumeSlider.value));
+    for (const audio of voiceAudioElements) {
+      audio.volume = voiceVolume;
+    }
   });
+
+  const itemTray = document.createElement('div');
+  itemTray.className = 'item-tray';
+  app.appendChild(itemTray);
+
+  const renderItemsForLetter = (letter: string) => {
+    itemTray.replaceChildren();
+    const items = itemImagesByLetter.get(letter) ?? [];
+    if (items.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'item-empty';
+      empty.textContent = `No ${letter.toUpperCase()} items yet.`;
+      itemTray.appendChild(empty);
+      return;
+    }
+
+    const selection = pickRandomItems(items, 3);
+    for (const item of selection) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'item-card';
+      button.setAttribute('aria-label', item.label);
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const urls: string[] = [];
+        const letterUrl = alphabetAudioByLetter.get(letter);
+        if (letterUrl) {
+          urls.push(letterUrl);
+        }
+        if (item.audioUrl) {
+          urls.push(item.audioUrl);
+        }
+        void playVoiceSequence(urls);
+      });
+
+      const image = document.createElement('img');
+      image.src = item.imageUrl;
+      image.alt = item.label;
+      image.loading = 'lazy';
+      image.decoding = 'async';
+
+      const label = document.createElement('span');
+      label.className = 'item-label';
+      label.textContent = item.label;
+
+      button.appendChild(image);
+      button.appendChild(label);
+      itemTray.appendChild(button);
+    }
+  };
 
   // Set canvas sizes to window size with device pixel ratio
   let renderer: AuroraRenderer | null = null;
@@ -199,6 +400,10 @@ async function main() {
       chimeAudio.play().catch(() => {
         // Autoplay restrictions are expected; next gesture will retry.
       });
+    },
+    onLetterChange: (letter) => {
+      renderItemsForLetter(letter);
+      requestLetterSound(letter);
     },
   });
 

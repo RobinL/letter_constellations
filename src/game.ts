@@ -128,6 +128,7 @@ export type PathPoint = {
 
 type GameCallbacks = {
   onPointHit?: () => void;
+  onLetterChange?: (letter: string) => void;
 };
 
 export class Game {
@@ -155,12 +156,15 @@ export class Game {
   private pendingLetterReset = false;
   private readonly completionMessageSeconds = 2;
   private callbacks: GameCallbacks;
+  private currentLetterName = 'unknown';
 
   constructor(input: InputHandler, callbacks: GameCallbacks = {}) {
     const selection = loadRandomPlotPoints();
     this.plotPoints = selection.points;
     this.plotBounds = computeBounds(this.plotPoints);
     this.callbacks = callbacks;
+    this.currentLetterName = selection.name;
+    this.callbacks.onLetterChange?.(this.currentLetterName);
     input.setCallbacks({
       onStart: (point) => this.startPath(point),
       onMove: (point) => this.extendPath(point),
@@ -517,6 +521,8 @@ export class Game {
     const selection = loadRandomPlotPoints();
     this.plotPoints = selection.points;
     this.plotBounds = computeBounds(this.plotPoints);
+    this.currentLetterName = selection.name;
+    this.callbacks.onLetterChange?.(this.currentLetterName);
     this.scaledPlotPoints = [];
     this.currentTargetIndex = 0;
     this.lineSegmentIndex = 0;
