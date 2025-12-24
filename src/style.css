@@ -118,17 +118,26 @@ html, body {
   accent-color: #ffffff;
 }
 
-.item-tray {
+.letter-panel {
   position: fixed;
-  left: 50%;
-  bottom: 72px;
-  transform: translateX(-50%);
   z-index: 4;
+  pointer-events: none;
+}
+
+.letter-display {
+  font-family: "Andika", "Trebuchet MS", "Lucida Sans", Arial, sans-serif;
+  font-size: clamp(48px, 8vw, 120px);
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  text-transform: lowercase;
+}
+
+.item-tray {
   display: flex;
   gap: 16px;
   align-items: center;
   justify-content: center;
-  width: min(90vw, 420px);
+  width: min(50vw, 240px);
   pointer-events: auto;
 }
 
@@ -196,11 +205,6 @@ html, body {
 }
 
 @media (max-width: 640px) {
-  .item-tray {
-    width: min(94vw, 360px);
-    gap: 10px;
-  }
-
   .item-card img {
     width: 56px;
     height: 56px;
@@ -214,6 +218,39 @@ html, body {
 
   .item-label {
     font-size: 10px;
+  }
+}
+
+@media (orientation: portrait) {
+  .letter-panel {
+    left: 50%;
+    bottom: 72px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+}
+
+@media (orientation: landscape) {
+  .letter-panel {
+    inset: 0;
+    --landscape-edge: clamp(20px, 6vw, 80px);
+  }
+
+  .letter-panel__item {
+    position: absolute;
+    top: 50%;
+    left: var(--landscape-edge);
+    transform: translate(0, -50%);
+  }
+
+  .letter-display {
+    position: absolute;
+    top: 50%;
+    right: var(--landscape-edge);
+    transform: translate(0, -50%);
   }
 }
 

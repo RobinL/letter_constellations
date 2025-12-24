@@ -304,12 +304,23 @@ async function main() {
     }
   });
 
+  const letterPanel = document.createElement('div');
+  letterPanel.className = 'letter-panel';
+
+  const letterDisplay = document.createElement('div');
+  letterDisplay.className = 'letter-display';
+  letterDisplay.setAttribute('aria-hidden', 'true');
+
   const itemTray = document.createElement('div');
-  itemTray.className = 'item-tray';
-  app.appendChild(itemTray);
+  itemTray.className = 'item-tray letter-panel__item';
+
+  letterPanel.appendChild(letterDisplay);
+  letterPanel.appendChild(itemTray);
+  app.appendChild(letterPanel);
 
   const renderItemsForLetter = (letter: string) => {
     itemTray.replaceChildren();
+    letterDisplay.textContent = letter;
     const items = itemImagesByLetter.get(letter) ?? [];
     if (items.length === 0) {
       const empty = document.createElement('div');
@@ -319,7 +330,7 @@ async function main() {
       return;
     }
 
-    const selection = pickRandomItems(items, 3);
+    const selection = pickRandomItems(items, 1);
     for (const item of selection) {
       const button = document.createElement('button');
       button.type = 'button';
