@@ -120,6 +120,20 @@
   },
   {
     "order": 18,
+    "x": 758,
+    "y": 431,
+    "display": "intermediate",
+    "note": "Loop End"
+  },
+  {
+    "order": 19,
+    "x": 779,
+    "y": 266,
+    "display": "intermediate",
+    "note": "Loop End"
+  },
+  {
+    "order": 20,
     "x": 810,
     "y": 180,
     "display": "intermediate",
@@ -127,56 +141,56 @@
     "note": "Lift Pen -> Top of Stem"
   },
   {
-    "order": 19,
+    "order": 21,
     "x": 810,
     "y": 265,
     "display": "keystone",
     "note": "Stem Down"
   },
   {
-    "order": 20,
+    "order": 22,
     "x": 810,
     "y": 350,
     "display": "intermediate",
     "note": "Stem Down"
   },
   {
-    "order": 21,
+    "order": 23,
     "x": 810,
     "y": 435,
     "display": "intermediate",
     "note": "Stem Down"
   },
   {
-    "order": 22,
+    "order": 24,
     "x": 810,
     "y": 520,
     "display": "keystone",
     "note": "Stem Center"
   },
   {
-    "order": 23,
+    "order": 25,
     "x": 810,
     "y": 605,
     "display": "intermediate",
     "note": "Stem Down"
   },
   {
-    "order": 24,
+    "order": 26,
     "x": 810,
     "y": 690,
     "display": "intermediate",
     "note": "Stem Down"
   },
   {
-    "order": 25,
+    "order": 27,
     "x": 810,
     "y": 775,
     "display": "keystone",
     "note": "Stem Bottom"
   },
   {
-    "order": 26,
+    "order": 28,
     "x": 810,
     "y": 860,
     "display": "intermediate",

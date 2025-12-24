@@ -2,21 +2,21 @@
   {
     "order": 1,
     "x": 240,
-    "y": 150,
+    "y": 42,
     "display": "keystone",
     "note": "Start Dot (Top of Stem)"
   },
   {
     "order": 2,
-    "x": 240,
-    "y": 230,
+    "x": 239,
+    "y": 166,
     "display": "intermediate",
     "note": "Stem Down"
   },
   {
     "order": 3,
-    "x": 240,
-    "y": 310,
+    "x": 239,
+    "y": 263,
     "display": "intermediate",
     "note": "Stem Down"
   },
@@ -65,12 +65,26 @@
   {
     "order": 10,
     "x": 240,
-    "y": 870,
+    "y": 864,
     "display": "keystone",
     "note": "Stem Bottom Arrow"
   },
   {
     "order": 11,
+    "x": 241,
+    "y": 725,
+    "display": "keystone",
+    "note": "Stem Bottom Arrow"
+  },
+  {
+    "order": 12,
+    "x": 236,
+    "y": 522,
+    "display": "keystone",
+    "note": "Stem Bottom Arrow"
+  },
+  {
+    "order": 13,
     "x": 240,
     "y": 450,
     "display": "intermediate",
@@ -78,108 +92,101 @@
     "note": "Lift Pen -> Start Loop (Mid-Stem)"
   },
   {
-    "order": 12,
+    "order": 14,
     "x": 290,
     "y": 390,
     "display": "intermediate",
     "note": "Loop Curve Up-Right"
   },
   {
-    "order": 13,
+    "order": 15,
     "x": 380,
     "y": 350,
     "display": "keystone",
     "note": "Loop Top Left"
   },
   {
-    "order": 14,
+    "order": 16,
     "x": 490,
     "y": 335,
     "display": "intermediate",
     "note": "Loop Top Center"
   },
   {
-    "order": 15,
+    "order": 17,
     "x": 610,
     "y": 350,
     "display": "intermediate",
     "note": "Loop Top Right"
   },
   {
-    "order": 16,
+    "order": 18,
     "x": 710,
     "y": 410,
     "display": "keystone",
     "note": "Loop Top Curve"
   },
   {
-    "order": 17,
+    "order": 19,
     "x": 780,
     "y": 500,
     "display": "intermediate",
     "note": "Loop Far Right"
   },
   {
-    "order": 18,
+    "order": 20,
     "x": 800,
     "y": 600,
     "display": "intermediate",
     "note": "Loop Far Right Mid"
   },
   {
-    "order": 19,
+    "order": 21,
     "x": 780,
     "y": 700,
     "display": "keystone",
     "note": "Loop Bottom Right Turn"
   },
   {
-    "order": 20,
+    "order": 22,
     "x": 710,
     "y": 790,
     "display": "intermediate",
     "note": "Loop Bottom Curve"
   },
   {
-    "order": 21,
+    "order": 23,
     "x": 610,
     "y": 845,
     "display": "intermediate",
     "note": "Loop Bottom Right"
   },
   {
-    "order": 22,
+    "order": 24,
     "x": 500,
     "y": 870,
     "display": "keystone",
     "note": "Loop Bottom Center"
   },
   {
-    "order": 23,
-    "x": 390,
-    "y": 860,
+    "order": 25,
+    "x": 391,
+    "y": 871,
     "display": "intermediate",
     "note": "Loop Bottom Left"
   },
   {
-    "order": 24,
-    "x": 310,
-    "y": 820,
+    "order": 26,
+    "x": 315,
+    "y": 870,
     "display": "intermediate",
     "note": "Loop Closing In"
   },
   {
-    "order": 25,
-    "x": 260,
-    "y": 850,
+    "order": 27,
+    "x": 241,
+    "y": 863,
     "display": "keystone",
     "note": "Loop Connect to Stem"
-  },
-  {
-    "order": 26,
-    "x": 240,
-    "y": 870,
-    "display": "intermediate",
-    "note": "Finish"
   }
 ]

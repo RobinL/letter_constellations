@@ -164,22 +164,8 @@
   {
     "order": 24,
     "x": 780,
-    "y": 850,
-    "display": "intermediate",
-    "note": "Arrow Tail"
-  },
-  {
-    "order": 25,
-    "x": 780,
     "y": 870,
     "display": "keystone",
     "note": "Right Arrow Tip"
-  },
-  {
-    "order": 26,
-    "x": 780,
-    "y": 890,
-    "display": "intermediate",
-    "note": "Finish"
   }
 ]

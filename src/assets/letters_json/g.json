@@ -1,8 +1,8 @@
 [
   {
     "order": 1,
-    "x": 710,
-    "y": 240,
+    "x": 742,
+    "y": 260,
     "display": "keystone",
     "note": "Start Black Dot"
   },
@@ -93,7 +93,7 @@
   {
     "order": 14,
     "x": 780,
-    "y": 300,
+    "y": 272,
     "display": "intermediate",
     "note": "Stem Up"
   },
@@ -101,81 +101,74 @@
     "order": 15,
     "x": 780,
     "y": 200,
-    "display": "intermediate",
-    "note": "Stem Up"
-  },
-  {
-    "order": 16,
-    "x": 780,
-    "y": 120,
     "display": "keystone",
     "note": "Top of Stem"
   },
   {
-    "order": 17,
+    "order": 16,
     "x": 780,
-    "y": 300,
+    "y": 337,
     "display": "intermediate",
     "note": "Stem Down (Retrace)"
   },
   {
-    "order": 18,
+    "order": 17,
     "x": 780,
     "y": 500,
     "display": "intermediate",
     "note": "Stem Down Middle"
   },
   {
-    "order": 19,
+    "order": 18,
     "x": 780,
     "y": 700,
     "display": "keystone",
     "note": "Descender Start"
   },
   {
-    "order": 20,
+    "order": 19,
     "x": 780,
-    "y": 820,
+    "y": 881,
     "display": "intermediate",
     "note": "Descender Down"
   },
   {
-    "order": 21,
+    "order": 20,
     "x": 720,
-    "y": 900,
+    "y": 930,
     "display": "intermediate",
     "note": "Tail Curve Start"
   },
   {
-    "order": 22,
-    "x": 600,
-    "y": 940,
+    "order": 21,
+    "x": 599,
+    "y": 979,
     "display": "keystone",
     "note": "Tail Bottom Center"
   },
   {
-    "order": 23,
+    "order": 22,
     "x": 480,
-    "y": 940,
+    "y": 987,
     "display": "intermediate",
     "note": "Tail Curve Left"
   },
   {
-    "order": 24,
-    "x": 360,
-    "y": 900,
+    "order": 23,
+    "x": 359,
+    "y": 945,
     "display": "intermediate",
     "note": "Tail Curve Up"
   },
   {
-    "order": 25,
+    "order": 24,
     "x": 260,
-    "y": 840,
+    "y": 886,
     "display": "keystone",
     "note": "Tail Arrow Head"
   },
   {
-    "order": 26,
+    "order": 25,
     "x": 200,
     "y": 800,
     "display": "intermediate",

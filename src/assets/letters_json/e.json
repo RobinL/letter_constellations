@@ -162,23 +162,9 @@
   },
   {
     "order": 24,
-    "x": 750,
-    "y": 690,
-    "display": "intermediate",
-    "note": "Arrow Tail"
-  },
-  {
-    "order": 25,
-    "x": 760,
-    "y": 670,
+    "x": 769,
+    "y": 655,
     "display": "keystone",
     "note": "Arrow Head"
-  },
-  {
-    "order": 26,
-    "x": 770,
-    "y": 650,
-    "display": "intermediate",
-    "note": "Finish Tip"
   }
 ]

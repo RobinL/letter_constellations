@@ -1,29 +1,29 @@
 [
   {
     "order": 1,
-    "x": 640,
-    "y": 460,
+    "x": 736,
+    "y": 422,
     "display": "keystone",
     "note": "Start Black Dot"
   },
   {
     "order": 2,
-    "x": 580,
-    "y": 380,
+    "x": 631,
+    "y": 311,
     "display": "intermediate",
     "note": "Curve Up-Left"
   },
   {
     "order": 3,
-    "x": 500,
-    "y": 330,
+    "x": 512,
+    "y": 266,
     "display": "intermediate",
     "note": "Curve Up-Left"
   },
   {
     "order": 4,
-    "x": 400,
-    "y": 310,
+    "x": 390,
+    "y": 280,
     "display": "keystone",
     "note": "Top of Loop"
   },
@@ -114,28 +114,28 @@
   {
     "order": 17,
     "x": 780,
-    "y": 200,
+    "y": 166,
     "display": "intermediate",
     "note": "Stem Up"
   },
   {
     "order": 18,
     "x": 780,
-    "y": 100,
+    "y": 56,
     "display": "intermediate",
     "note": "Reach Top"
   },
   {
     "order": 19,
-    "x": 780,
-    "y": 90,
+    "x": 779,
+    "y": -79,
     "display": "keystone",
     "note": "Top Turnaround"
   },
   {
     "order": 20,
     "x": 780,
-    "y": 250,
+    "y": 239,
     "display": "intermediate",
     "note": "Stem Down (Retrace)"
   },
@@ -155,30 +155,9 @@
   },
   {
     "order": 23,
-    "x": 780,
-    "y": 700,
-    "display": "intermediate",
-    "note": "Stem Down"
-  },
-  {
-    "order": 24,
-    "x": 780,
-    "y": 800,
-    "display": "intermediate",
-    "note": "Stem Down"
-  },
-  {
-    "order": 25,
-    "x": 780,
-    "y": 900,
+    "x": 779,
+    "y": 687,
     "display": "keystone",
     "note": "Stem Bottom"
-  },
-  {
-    "order": 26,
-    "x": 780,
-    "y": 930,
-    "display": "intermediate",
-    "note": "Finish Arrow"
   }
 ]

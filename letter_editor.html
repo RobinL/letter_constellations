@@ -258,7 +258,7 @@
 
     <div class="editor-container">
         <div class="canvas-wrapper">
-            <canvas id="editor-canvas" width="1000" height="1000"></canvas>
+            <canvas id="editor-canvas" width="1200" height="1400"></canvas>
         </div>
 
         <div class="sidebar">
@@ -298,6 +298,10 @@
         let dragOffset = { x: 0, y: 0 };
         let undoStack = [];
         let currentLetter = '';
+
+        // Canvas offset to center letters (original design was 1000x1000)
+        const CANVAS_OFFSET_X = 100;
+        const CANVAS_OFFSET_Y = 200;
 
         // DOM elements
         const canvas = document.getElementById('editor-canvas');
@@ -396,7 +400,9 @@
             for (let i = points.length - 1; i >= 0; i--) {
                 const p = points[i];
                 const size = p.display === 'keystone' ? SIZES.keystone : SIZES.intermediate;
-                const dist = Math.sqrt((p.x - x) ** 2 + (p.y - y) ** 2);
+                const px = p.x + CANVAS_OFFSET_X;
+                const py = p.y + CANVAS_OFFSET_Y;
+                const dist = Math.sqrt((px - x) ** 2 + (py - y) ** 2);
                 if (dist <= size + 5) return i;
             }
             return -1;
@@ -431,7 +437,7 @@
                 const size = p.display === 'keystone' ? SIZES.keystone : SIZES.intermediate;
 
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+                ctx.arc(p.x + CANVAS_OFFSET_X, p.y + CANVAS_OFFSET_Y, size, 0, Math.PI * 2);
 
                 // Fill color
                 if (isSelected) {
@@ -458,7 +464,7 @@
                     ctx.font = 'bold 10px sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(String(i + 1), p.x, p.y);
+                    ctx.fillText(String(i + 1), p.x + CANVAS_OFFSET_X, p.y + CANVAS_OFFSET_Y);
                 }
             });
         }
@@ -466,9 +472,9 @@
         function drawStrokePath(startIdx, endIdx) {
             if (startIdx >= endIdx) return;
             ctx.beginPath();
-            ctx.moveTo(points[startIdx].x, points[startIdx].y);
+            ctx.moveTo(points[startIdx].x + CANVAS_OFFSET_X, points[startIdx].y + CANVAS_OFFSET_Y);
             for (let i = startIdx + 1; i <= endIdx; i++) {
-                ctx.lineTo(points[i].x, points[i].y);
+                ctx.lineTo(points[i].x + CANVAS_OFFSET_X, points[i].y + CANVAS_OFFSET_Y);
             }
             ctx.stroke();
         }
@@ -529,22 +535,33 @@
             const a = document.createElement('a');
             a.href = url;
             a.download = `${currentLetter}.json`;
-
-
-            // Copy JSON to clipboard
-            async function copyToClipboard() {
-                if (!currentLetter || points.length === 0) return;
-
-                const data = JSON.stringify(points, null, 2);
-                try {
-                    await navigator.clipboard.writeText(data);
-                    setStatus(`Copied ${currentLetter}.json to clipboard!`);
-                } catch (err) {
-                    setStatus(`Failed to copy to clipboard: ${err.message}`);
-                }
-            } a.click();
+            a.click();
             URL.revokeObjectURL(url);
             setStatus(`Downloaded ${currentLetter}.json`);
+        }
+
+        // Copy JSON to clipboard
+        async function copyToClipboard() {
+            console.log('copyToClipboard called');
+            console.log('currentLetter:', currentLetter);
+            console.log('points.length:', points.length);
+
+            if (!currentLetter || points.length === 0) {
+                console.log('Returning early - no letter or points');
+                return;
+            }
+
+            const data = JSON.stringify(points, null, 2);
+            console.log('JSON data length:', data.length);
+
+            try {
+                await navigator.clipboard.writeText(data);
+                console.log('Successfully copied to clipboard');
+                setStatus(`Copied ${currentLetter}.json to clipboard!`);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                setStatus(`Failed to copy to clipboard: ${err.message}`);
+            }
         }
 
         // Copy selected point
@@ -618,7 +635,6 @@
 
         // Toggle keystone/intermediate
         function toggleDisplay() {
-            copyBtn.addEventListener('click', copyToClipboard);
             if (selectedIndex < 0) {
                 setStatus('No point selected. Click a point first.');
                 return;
@@ -635,6 +651,7 @@
         // Event listeners
         letterSelect.addEventListener('change', () => loadLetter(letterSelect.value));
         downloadBtn.addEventListener('click', downloadJSON);
+        copyBtn.addEventListener('click', copyToClipboard);
         undoBtn.addEventListener('click', undo);
         showLinesCheckbox.addEventListener('change', render);
         showOrderCheckbox.addEventListener('change', render);
@@ -649,8 +666,8 @@
             if (hitIndex >= 0) {
                 dragIndex = hitIndex;
                 isDragging = true;
-                dragOffset.x = points[hitIndex].x - x;
-                dragOffset.y = points[hitIndex].y - y;
+                dragOffset.x = points[hitIndex].x - (x - CANVAS_OFFSET_X);
+                dragOffset.y = points[hitIndex].y - (y - CANVAS_OFFSET_Y);
                 saveState();
                 selectedIndex = hitIndex;
                 render();
@@ -665,8 +682,8 @@
             const x = (e.clientX - rect.left) * (canvas.width / rect.width);
             const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-            points[dragIndex].x = Math.round(x + dragOffset.x);
-            points[dragIndex].y = Math.round(y + dragOffset.y);
+            points[dragIndex].x = Math.round(x - CANVAS_OFFSET_X + dragOffset.x);
+            points[dragIndex].y = Math.round(y - CANVAS_OFFSET_Y + dragOffset.y);
             render();
         });
 
