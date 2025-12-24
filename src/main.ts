@@ -311,9 +311,10 @@ async function main() {
   const letterPanel = document.createElement('div');
   letterPanel.className = 'letter-panel';
 
-  const letterDisplay = document.createElement('div');
+  const letterDisplay = document.createElement('button');
   letterDisplay.className = 'letter-display';
-  letterDisplay.setAttribute('aria-hidden', 'true');
+  letterDisplay.type = 'button';
+  letterDisplay.setAttribute('aria-label', 'Play letter sound');
 
   const itemTray = document.createElement('div');
   itemTray.className = 'item-tray letter-panel__item';
@@ -322,9 +323,11 @@ async function main() {
   letterPanel.appendChild(itemTray);
   app.appendChild(letterPanel);
 
+  let currentLetter = '';
   const renderItemsForLetter = (letter: string) => {
     itemTray.replaceChildren();
     letterDisplay.textContent = letter;
+    currentLetter = letter;
     const items = itemImagesByLetter.get(letter) ?? [];
     if (items.length === 0) {
       const empty = document.createElement('div');
@@ -443,6 +446,14 @@ async function main() {
       renderItemsForLetter(letter);
       requestLetterSound(letter);
     },
+  });
+
+  letterDisplay.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (!currentLetter) {
+      return;
+    }
+    requestLetterSound(currentLetter);
   });
 
   clearButton.addEventListener('click', (event) => {
