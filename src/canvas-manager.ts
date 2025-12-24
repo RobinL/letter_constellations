@@ -7,7 +7,7 @@ export type CanvasSize = {
 export class CanvasManager {
   private size: CanvasSize;
   private readonly auroraScale = 0.66;
-  private readonly sparkleScale = 0.75;
+  private readonly sparkleScale = 1.0;
 
   constructor(
     private auroraCanvas: HTMLCanvasElement,
