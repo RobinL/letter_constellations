@@ -17,6 +17,11 @@ type PlotBounds = {
   maxY: number;
 };
 
+type StrokeSegment = {
+  from: number;
+  to: number;
+};
+
 const letterData = Object.values(letterModules)
   .map((mod) => (mod as { default: PlotPoint[] }).default)
   .filter((points): points is PlotPoint[] => Array.isArray(points));
@@ -52,6 +57,52 @@ const computeBounds = (points: PlotPoint[]): PlotBounds => {
   return { minX, maxX, minY, maxY };
 };
 
+const PEN_UP_DISTANCE_MULTIPLIER = 3.5;
+
+const computeMedian = (values: number[]): number => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return sorted[mid];
+};
+
+const computePenUpThreshold = (points: PlotPoint[]): number => {
+  if (points.length < 2) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const distances: number[] = [];
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const dx = points[i + 1].x - points[i].x;
+    const dy = points[i + 1].y - points[i].y;
+    distances.push(Math.hypot(dx, dy));
+  }
+  const nonZeroDistances = distances.filter((distance) => distance > 0);
+  const sample = nonZeroDistances.length > 0 ? nonZeroDistances : distances;
+  if (sample.length === 0) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const median = computeMedian(sample);
+  return median * PEN_UP_DISTANCE_MULTIPLIER;
+};
+
+const buildStrokeSegments = (points: PlotPoint[], threshold: number): StrokeSegment[] => {
+  const segments: StrokeSegment[] = [];
+  if (points.length < 2) {
+    return segments;
+  }
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const dx = points[i + 1].x - points[i].x;
+    const dy = points[i + 1].y - points[i].y;
+    if (Math.hypot(dx, dy) > threshold) {
+      continue;
+    }
+    segments.push({ from: i, to: i + 1 });
+  }
+  return segments;
+};
+
 export type PathPoint = {
   x: number;
   y: number;
@@ -77,6 +128,7 @@ export class Game {
   private currentTargetIndex = 0;
   private dotRadius = 20;
   private hitRadiusScale = 1.5;
+  private penUpDistanceThreshold = Number.POSITIVE_INFINITY;
   private lineSegmentIndex = 0;
   private lineSegmentT = 0;
   private linePauseRemaining = 0;
@@ -180,6 +232,7 @@ export class Game {
       x: point.x * scale + offsetX,
       y: point.y * scale + offsetY,
     }));
+    this.penUpDistanceThreshold = computePenUpThreshold(this.scaledPlotPoints);
   }
 
   update(deltaTime: number): void {
@@ -297,31 +350,64 @@ export class Game {
       this.scaledPlotPoints.length - 1
     );
     const points = this.scaledPlotPoints.slice(startIndex);
-    if (points.length < 2) {
+    const segments = buildStrokeSegments(points, this.penUpDistanceThreshold);
+    if (segments.length === 0) {
       return;
     }
-    ctx.moveTo(points[0].x, points[0].y);
 
     if (this.linePauseRemaining > 0) {
-      for (let i = 1; i < points.length; i += 1) {
-        ctx.lineTo(points[i].x, points[i].y);
-      }
+      this.drawLineSegments(ctx, points, segments, segments.length - 1);
     } else {
-      const lastIndex = Math.min(this.lineSegmentIndex, points.length - 1);
-      for (let i = 1; i <= lastIndex; i += 1) {
-        ctx.lineTo(points[i].x, points[i].y);
-      }
-
-      const nextIndex = Math.min(this.lineSegmentIndex + 1, points.length - 1);
-      if (nextIndex > this.lineSegmentIndex) {
-        const from = points[this.lineSegmentIndex];
-        const to = points[nextIndex];
-        const x = from.x + (to.x - from.x) * this.lineSegmentT;
-        const y = from.y + (to.y - from.y) * this.lineSegmentT;
-        ctx.lineTo(x, y);
-      }
+      const clampedIndex = Math.min(this.lineSegmentIndex, segments.length - 1);
+      this.drawLineSegments(ctx, points, segments, clampedIndex - 1);
+      this.drawPartialLineSegment(ctx, points, segments, clampedIndex, this.lineSegmentT);
     }
     ctx.stroke();
+  }
+
+  private drawLineSegments(
+    ctx: CanvasRenderingContext2D,
+    points: PlotPoint[],
+    segments: StrokeSegment[],
+    lastIndex: number
+  ): void {
+    if (lastIndex < 0) {
+      return;
+    }
+    const cappedIndex = Math.min(lastIndex, segments.length - 1);
+    let previousSegment: StrokeSegment | null = null;
+    for (let i = 0; i <= cappedIndex; i += 1) {
+      const segment = segments[i];
+      const from = points[segment.from];
+      const to = points[segment.to];
+      if (!previousSegment || previousSegment.to !== segment.from) {
+        ctx.moveTo(from.x, from.y);
+      }
+      ctx.lineTo(to.x, to.y);
+      previousSegment = segment;
+    }
+  }
+
+  private drawPartialLineSegment(
+    ctx: CanvasRenderingContext2D,
+    points: PlotPoint[],
+    segments: StrokeSegment[],
+    index: number,
+    t: number
+  ): void {
+    if (index < 0 || index >= segments.length) {
+      return;
+    }
+    const segment = segments[index];
+    const from = points[segment.from];
+    const to = points[segment.to];
+    const previous = index > 0 ? segments[index - 1] : null;
+    if (!previous || previous.to !== segment.from) {
+      ctx.moveTo(from.x, from.y);
+    }
+    const x = from.x + (to.x - from.x) * t;
+    const y = from.y + (to.y - from.y) * t;
+    ctx.lineTo(x, y);
   }
 
   private tryAdvanceTarget(point: PointerPoint): void {
@@ -363,14 +449,16 @@ export class Game {
       return;
     }
 
-    const remainingPoints = Math.max(
-      0,
-      this.scaledPlotPoints.length - Math.max(0, this.currentTargetIndex - 1)
+    const startIndex = Math.min(
+      Math.max(0, this.currentTargetIndex - 1),
+      this.scaledPlotPoints.length - 1
     );
-    if (remainingPoints < 2) {
+    const points = this.scaledPlotPoints.slice(startIndex);
+    const segments = buildStrokeSegments(points, this.penUpDistanceThreshold);
+    const segmentCount = segments.length;
+    if (segmentCount === 0) {
       return;
     }
-    const segmentCount = remainingPoints - 1;
     this.lineSegmentIndex = Math.min(this.lineSegmentIndex, segmentCount - 1);
 
     if (this.linePauseRemaining > 0) {
