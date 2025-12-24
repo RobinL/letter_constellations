@@ -1,76 +1,83 @@
 [
   {
     "order": 1,
-    "x": 220,
-    "y": 120,
+    "x": 216,
+    "y": -91,
     "display": "keystone",
     "note": "Start Black Dot"
   },
   {
     "order": 2,
-    "x": 220,
-    "y": 230,
+    "x": 219,
+    "y": 28,
     "display": "intermediate",
     "note": "Stem Down"
   },
   {
     "order": 3,
-    "x": 220,
-    "y": 310,
+    "x": 218,
+    "y": 167,
     "display": "intermediate",
     "note": "Stem Down"
   },
   {
     "order": 4,
     "x": 220,
+    "y": 310,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 5,
+    "x": 220,
     "y": 390,
     "display": "keystone",
     "note": "Stem Upper Middle"
   },
   {
-    "order": 5,
+    "order": 6,
     "x": 220,
     "y": 470,
     "display": "intermediate",
     "note": "Stem Middle"
   },
   {
-    "order": 6,
+    "order": 7,
     "x": 220,
     "y": 550,
     "display": "intermediate",
     "note": "Stem Lower Middle"
   },
   {
-    "order": 7,
+    "order": 8,
     "x": 220,
     "y": 630,
     "display": "keystone",
     "note": "Stem Low"
   },
   {
-    "order": 8,
+    "order": 9,
     "x": 220,
     "y": 710,
     "display": "intermediate",
     "note": "Stem Lower"
   },
   {
-    "order": 9,
+    "order": 10,
     "x": 220,
     "y": 790,
     "display": "intermediate",
     "note": "Stem Approach Bottom"
   },
   {
-    "order": 10,
+    "order": 11,
     "x": 220,
     "y": 870,
     "display": "keystone",
     "note": "Stem Left Arrow"
   },
   {
-    "order": 11,
+    "order": 12,
     "x": 220,
     "y": 500,
     "display": "intermediate",
@@ -78,88 +85,81 @@
     "note": "Branch Point (Mid-Stem)"
   },
   {
-    "order": 12,
+    "order": 13,
     "x": 280,
     "y": 420,
     "display": "intermediate",
     "note": "Arch Up-Right"
   },
   {
-    "order": 13,
+    "order": 14,
     "x": 360,
     "y": 360,
     "display": "keystone",
     "note": "Arch Left Shoulder"
   },
   {
-    "order": 14,
+    "order": 15,
     "x": 460,
     "y": 330,
     "display": "intermediate",
     "note": "Arch Top Center"
   },
   {
-    "order": 15,
+    "order": 16,
     "x": 560,
     "y": 330,
     "display": "intermediate",
     "note": "Arch Top Right"
   },
   {
-    "order": 16,
+    "order": 17,
     "x": 660,
     "y": 360,
     "display": "keystone",
     "note": "Arch Right Shoulder"
   },
   {
-    "order": 17,
+    "order": 18,
     "x": 740,
     "y": 420,
     "display": "intermediate",
     "note": "Arch Curve Down"
   },
   {
-    "order": 18,
+    "order": 19,
     "x": 780,
     "y": 500,
     "display": "intermediate",
     "note": "Right Leg Start"
   },
   {
-    "order": 19,
+    "order": 20,
     "x": 780,
     "y": 580,
     "display": "keystone",
     "note": "Right Leg Mid-High"
   },
   {
-    "order": 20,
+    "order": 21,
     "x": 780,
     "y": 650,
     "display": "intermediate",
     "note": "Right Leg Middle"
   },
   {
-    "order": 21,
+    "order": 22,
     "x": 780,
     "y": 720,
     "display": "intermediate",
     "note": "Right Leg Low"
   },
   {
-    "order": 22,
+    "order": 23,
     "x": 780,
     "y": 790,
     "display": "keystone",
     "note": "Right Leg Lower"
-  },
-  {
-    "order": 23,
-    "x": 780,
-    "y": 830,
-    "display": "intermediate",
-    "note": "Approach Arrow"
   },
   {
     "order": 24,
