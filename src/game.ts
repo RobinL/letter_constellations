@@ -22,6 +22,11 @@ type StrokeSegment = {
   to: number;
 };
 
+type Point2D = {
+  x: number;
+  y: number;
+};
+
 type LetterPlot = {
   name: string;
   points: PlotPoint[];
@@ -401,12 +406,12 @@ export class Game {
       return;
     }
 
+    ctx.save();
     ctx.strokeStyle = 'rgba(255, 220, 0, 0.5)';
     ctx.lineWidth = 9;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
 
-    ctx.beginPath();
     const startIndex = Math.min(
       Math.max(0, this.currentTargetIndex - 1),
       this.scaledPlotPoints.length - 1
@@ -414,20 +419,23 @@ export class Game {
     const points = this.scaledPlotPoints.slice(startIndex);
     const segments = buildStrokeSegments(points, this.penUpDistanceThreshold);
     if (segments.length === 0) {
+      ctx.restore();
       return;
     }
 
     if (this.linePauseRemaining > 0) {
-      this.drawLineSegments(ctx, points, segments, segments.length - 1);
+      this.strokeLineSegments(ctx, points, segments, segments.length - 1);
+      this.drawLineNib(ctx, points, segments, segments.length - 1, 1);
     } else {
       const clampedIndex = Math.min(this.lineSegmentIndex, segments.length - 1);
-      this.drawLineSegments(ctx, points, segments, clampedIndex - 1);
-      this.drawPartialLineSegment(ctx, points, segments, clampedIndex, this.lineSegmentT);
+      this.strokeLineSegments(ctx, points, segments, clampedIndex - 1);
+      this.strokePartialLineSegment(ctx, points, segments, clampedIndex, this.lineSegmentT);
+      this.drawLineNib(ctx, points, segments, clampedIndex, this.lineSegmentT);
     }
-    ctx.stroke();
+    ctx.restore();
   }
 
-  private drawLineSegments(
+  private strokeLineSegments(
     ctx: CanvasRenderingContext2D,
     points: PlotPoint[],
     segments: StrokeSegment[],
@@ -437,20 +445,15 @@ export class Game {
       return;
     }
     const cappedIndex = Math.min(lastIndex, segments.length - 1);
-    let previousSegment: StrokeSegment | null = null;
     for (let i = 0; i <= cappedIndex; i += 1) {
       const segment = segments[i];
       const from = points[segment.from];
       const to = points[segment.to];
-      if (!previousSegment || previousSegment.to !== segment.from) {
-        ctx.moveTo(from.x, from.y);
-      }
-      ctx.lineTo(to.x, to.y);
-      previousSegment = segment;
+      this.strokeLineSegment(ctx, from, to);
     }
   }
 
-  private drawPartialLineSegment(
+  private strokePartialLineSegment(
     ctx: CanvasRenderingContext2D,
     points: PlotPoint[],
     segments: StrokeSegment[],
@@ -463,13 +466,43 @@ export class Game {
     const segment = segments[index];
     const from = points[segment.from];
     const to = points[segment.to];
-    const previous = index > 0 ? segments[index - 1] : null;
-    if (!previous || previous.to !== segment.from) {
-      ctx.moveTo(from.x, from.y);
-    }
     const x = from.x + (to.x - from.x) * t;
     const y = from.y + (to.y - from.y) * t;
-    ctx.lineTo(x, y);
+    this.strokeLineSegment(ctx, from, { x, y });
+  }
+
+  private strokeLineSegment(
+    ctx: CanvasRenderingContext2D,
+    from: Point2D,
+    to: Point2D
+  ): void {
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+  }
+
+  private drawLineNib(
+    ctx: CanvasRenderingContext2D,
+    points: PlotPoint[],
+    segments: StrokeSegment[],
+    index: number,
+    t: number
+  ): void {
+    if (index < 0 || index >= segments.length) {
+      return;
+    }
+    const segment = segments[index];
+    const from = points[segment.from];
+    const to = points[segment.to];
+    const clampedT = Math.max(0, Math.min(1, t));
+    const x = from.x + (to.x - from.x) * clampedT;
+    const y = from.y + (to.y - from.y) * clampedT;
+    const nibRadius = Math.max(5, ctx.lineWidth * 0.7);
+    ctx.fillStyle = '#ffe000';
+    ctx.beginPath();
+    ctx.arc(x, y, nibRadius, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   private tryAdvanceTarget(point: PointerPoint): void {
