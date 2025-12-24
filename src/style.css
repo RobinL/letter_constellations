@@ -75,6 +75,36 @@ html, body {
   border-bottom-color: #ffffff;
 }
 
+.top-controls {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.control-button {
+  font-family: "Trebuchet MS", "Lucida Sans", Arial, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0b0b0b;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.control-button:hover,
+.control-button:focus-visible {
+  background: #ffffff;
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
 .mute-button {
   position: fixed;
   right: 16px;

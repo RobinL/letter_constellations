@@ -60,6 +60,23 @@ async function main() {
   muteButton.setAttribute('aria-pressed', 'false');
   app.appendChild(muteButton);
 
+  const topControls = document.createElement('div');
+  topControls.className = 'top-controls';
+
+  const clearButton = document.createElement('button');
+  clearButton.className = 'control-button';
+  clearButton.type = 'button';
+  clearButton.textContent = 'Clear';
+  topControls.appendChild(clearButton);
+
+  const resetButton = document.createElement('button');
+  resetButton.className = 'control-button';
+  resetButton.type = 'button';
+  resetButton.textContent = 'Reset';
+  topControls.appendChild(resetButton);
+
+  app.appendChild(topControls);
+
   const volumeControl = document.createElement('div');
   volumeControl.className = 'volume-control';
   volumeControl.innerHTML = `
@@ -78,7 +95,10 @@ async function main() {
   };
   updateMuteButton();
 
+  let userHasInteracted = false;
+
   const attemptPlay = () => {
+    if (!userHasInteracted) return;
     ensureAudioContext();
     if (audioContext && audioContext.state === 'suspended') {
       audioContext.resume().catch(() => {
@@ -91,10 +111,14 @@ async function main() {
   };
 
   const startAudioOnFirstInteraction = () => {
+    userHasInteracted = true;
     attemptPlay();
   };
-  document.addEventListener('pointerdown', startAudioOnFirstInteraction, { once: true });
-  setTimeout(attemptPlay, 0);
+  const firstInteractionOptions: AddEventListenerOptions = { once: true, capture: true };
+  document.addEventListener('pointerdown', startAudioOnFirstInteraction, firstInteractionOptions);
+  document.addEventListener('touchstart', startAudioOnFirstInteraction, firstInteractionOptions);
+  document.addEventListener('click', startAudioOnFirstInteraction, firstInteractionOptions);
+  document.addEventListener('keydown', startAudioOnFirstInteraction, firstInteractionOptions);
 
   muteButton.addEventListener('click', (event) => {
     event.stopPropagation();
@@ -176,6 +200,16 @@ async function main() {
         // Autoplay restrictions are expected; next gesture will retry.
       });
     },
+  });
+
+  clearButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    game?.clearUserPaths();
+  });
+
+  resetButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    game?.resetCurrentLetter();
   });
   const size = canvasManager.getSize();
   game.setViewportSize(size.width, size.height);

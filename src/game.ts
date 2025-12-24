@@ -126,6 +126,22 @@ export class Game {
     };
   }
 
+  clearUserPaths(): void {
+    this.paths = [];
+    this.currentPath = null;
+    this.isDrawing = false;
+  }
+
+  resetCurrentLetter(): void {
+    this.clearUserPaths();
+    this.currentTargetIndex = 0;
+    this.lineSegmentIndex = 0;
+    this.lineSegmentT = 0;
+    this.linePauseRemaining = 0;
+    this.pendingLetterReset = false;
+    this.completionMessageUntil = 0;
+  }
+
   setViewportSize(width: number, height: number): void {
     if (this.plotPoints.length === 0) {
       return;
