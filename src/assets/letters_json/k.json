@@ -9,85 +9,106 @@
   {
     "order": 2,
     "x": 220,
-    "y": 360,
+    "y": 307,
     "display": "intermediate",
     "note": "Stem Down"
   },
   {
     "order": 3,
+    "x": 217,
+    "y": 448,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 4,
     "x": 220,
     "y": 540,
     "display": "intermediate",
     "note": "Stem Middle"
   },
   {
-    "order": 4,
+    "order": 5,
     "x": 220,
     "y": 720,
     "display": "keystone",
     "note": "Stem Lower"
   },
   {
-    "order": 5,
+    "order": 6,
+    "x": 220,
+    "y": 807,
+    "display": "keystone",
+    "note": "Stem Lower"
+  },
+  {
+    "order": 7,
     "x": 220,
     "y": 900,
     "display": "intermediate",
     "note": "Stem Finish Arrow"
   },
   {
-    "order": 6,
-    "x": 680,
-    "y": 380,
+    "order": 8,
+    "x": 576,
+    "y": 388,
     "display": "keystone",
     "newStroke": true,
     "note": "Start 'X' (Top Right)"
   },
   {
-    "order": 7,
-    "x": 550,
-    "y": 460,
-    "display": "intermediate",
-    "note": "Diagonal In"
-  },
-  {
-    "order": 8,
-    "x": 420,
-    "y": 540,
-    "display": "intermediate",
-    "note": "Diagonal In"
-  },
-  {
     "order": 9,
-    "x": 300,
-    "y": 620,
+    "x": 485,
+    "y": 454,
+    "display": "intermediate",
+    "note": "Diagonal In"
+  },
+  {
+    "order": 10,
+    "x": 411,
+    "y": 506,
+    "display": "intermediate",
+    "note": "Diagonal In"
+  },
+  {
+    "order": 11,
+    "x": 320,
+    "y": 572,
+    "display": "intermediate",
+    "note": "Diagonal In"
+  },
+  {
+    "order": 12,
+    "x": 229,
+    "y": 637,
     "display": "keystone",
     "note": "The Turn (Touch Stem)"
   },
   {
-    "order": 10,
-    "x": 410,
-    "y": 690,
-    "display": "intermediate",
-    "note": "Diagonal Out"
-  },
-  {
-    "order": 11,
-    "x": 520,
-    "y": 760,
-    "display": "intermediate",
-    "note": "Diagonal Out"
-  },
-  {
-    "order": 12,
-    "x": 630,
-    "y": 830,
-    "display": "intermediate",
-    "note": "Diagonal Out"
-  },
-  {
     "order": 13,
-    "x": 740,
-    "y": 900,
+    "x": 337,
+    "y": 699,
+    "display": "intermediate",
+    "note": "Diagonal Out"
+  },
+  {
+    "order": 14,
+    "x": 441,
+    "y": 759,
+    "display": "intermediate",
+    "note": "Diagonal Out"
+  },
+  {
+    "order": 15,
+    "x": 520,
+    "y": 818,
+    "display": "intermediate",
+    "note": "Diagonal Out"
+  },
+  {
+    "order": 16,
+    "x": 613,
+    "y": 892,
     "display": "keystone",
     "note": "Leg Finish Arrow"
   }

@@ -1,0 +1,108 @@
+[
+  {
+    "order": 1,
+    "x": 500,
+    "y": 150,
+    "display": "keystone",
+    "note": "Start Black Dot (Top)"
+  },
+  {
+    "order": 2,
+    "x": 500,
+    "y": 270,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 3,
+    "x": 500,
+    "y": 390,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 4,
+    "x": 500,
+    "y": 510,
+    "display": "keystone",
+    "note": "Stem Middle"
+  },
+  {
+    "order": 5,
+    "x": 500,
+    "y": 630,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 6,
+    "x": 500,
+    "y": 750,
+    "display": "intermediate",
+    "note": "Begin Turn"
+  },
+  {
+    "order": 7,
+    "x": 510,
+    "y": 820,
+    "display": "keystone",
+    "note": "Curve Right"
+  },
+  {
+    "order": 8,
+    "x": 540,
+    "y": 880,
+    "display": "intermediate",
+    "note": "Curve Bottom"
+  },
+  {
+    "order": 9,
+    "x": 580,
+    "y": 910,
+    "display": "intermediate",
+    "note": "Hook Upwards"
+  },
+  {
+    "order": 10,
+    "x": 630,
+    "y": 920,
+    "display": "keystone",
+    "note": "Finish Hook"
+  },
+  {
+    "order": 11,
+    "x": 300,
+    "y": 350,
+    "display": "keystone",
+    "newStroke": true,
+    "note": "Start Crossbar (Left X)"
+  },
+  {
+    "order": 12,
+    "x": 400,
+    "y": 350,
+    "display": "intermediate",
+    "note": "Crossbar Left"
+  },
+  {
+    "order": 13,
+    "x": 500,
+    "y": 350,
+    "display": "intermediate",
+    "note": "Crossbar Center"
+  },
+  {
+    "order": 14,
+    "x": 600,
+    "y": 350,
+    "display": "intermediate",
+    "note": "Crossbar Right"
+  },
+  {
+    "order": 15,
+    "x": 700,
+    "y": 350,
+    "display": "keystone",
+    "note": "Finish Crossbar Arrow"
+  }
+]

@@ -1,0 +1,177 @@
+[
+  {
+    "order": 1,
+    "x": 250,
+    "y": 200,
+    "display": "keystone",
+    "note": "Start Black Dot (Top Left)"
+  },
+  {
+    "order": 2,
+    "x": 250,
+    "y": 300,
+    "display": "intermediate",
+    "note": "Left Stem Down"
+  },
+  {
+    "order": 3,
+    "x": 250,
+    "y": 400,
+    "display": "intermediate",
+    "note": "Left Stem Down"
+  },
+  {
+    "order": 4,
+    "x": 250,
+    "y": 500,
+    "display": "keystone",
+    "note": "Left Stem Middle"
+  },
+  {
+    "order": 5,
+    "x": 250,
+    "y": 600,
+    "display": "intermediate",
+    "note": "Left Stem Low"
+  },
+  {
+    "order": 6,
+    "x": 260,
+    "y": 700,
+    "display": "intermediate",
+    "note": "Begin Left Curve"
+  },
+  {
+    "order": 7,
+    "x": 290,
+    "y": 780,
+    "display": "keystone",
+    "note": "Curve Down-Right"
+  },
+  {
+    "order": 8,
+    "x": 350,
+    "y": 850,
+    "display": "intermediate",
+    "note": "Bowl Left"
+  },
+  {
+    "order": 9,
+    "x": 420,
+    "y": 890,
+    "display": "intermediate",
+    "note": "Bowl Bottom Left"
+  },
+  {
+    "order": 10,
+    "x": 500,
+    "y": 900,
+    "display": "keystone",
+    "note": "Bowl Bottom Center"
+  },
+  {
+    "order": 11,
+    "x": 580,
+    "y": 890,
+    "display": "intermediate",
+    "note": "Bowl Bottom Right"
+  },
+  {
+    "order": 12,
+    "x": 650,
+    "y": 850,
+    "display": "intermediate",
+    "note": "Bowl Right"
+  },
+  {
+    "order": 13,
+    "x": 710,
+    "y": 780,
+    "display": "keystone",
+    "note": "Curve Up-Right"
+  },
+  {
+    "order": 14,
+    "x": 740,
+    "y": 700,
+    "display": "intermediate",
+    "note": "Begin Right Stem"
+  },
+  {
+    "order": 15,
+    "x": 750,
+    "y": 600,
+    "display": "intermediate",
+    "note": "Right Stem Up"
+  },
+  {
+    "order": 16,
+    "x": 750,
+    "y": 500,
+    "display": "keystone",
+    "note": "Right Stem Middle"
+  },
+  {
+    "order": 17,
+    "x": 750,
+    "y": 400,
+    "display": "intermediate",
+    "note": "Right Stem Up"
+  },
+  {
+    "order": 18,
+    "x": 750,
+    "y": 300,
+    "display": "intermediate",
+    "note": "Right Stem Up"
+  },
+  {
+    "order": 19,
+    "x": 750,
+    "y": 240,
+    "display": "keystone",
+    "note": "Arrow Approach"
+  },
+  {
+    "order": 20,
+    "x": 750,
+    "y": 200,
+    "display": "intermediate",
+    "note": "Finish Arrow Tip"
+  },
+  {
+    "order": 21,
+    "x": 751,
+    "y": 442,
+    "display": "intermediate",
+    "note": "Finish Arrow Tip"
+  },
+  {
+    "order": 22,
+    "x": 747,
+    "y": 654,
+    "display": "intermediate",
+    "note": "Finish Arrow Tip"
+  },
+  {
+    "order": 23,
+    "x": 750,
+    "y": 814,
+    "display": "intermediate",
+    "note": "Finish Arrow Tip"
+  },
+  {
+    "order": 24,
+    "x": 794,
+    "y": 865,
+    "display": "intermediate",
+    "note": "Finish Arrow Tip"
+  },
+  {
+    "order": 25,
+    "x": 842,
+    "y": 891,
+    "display": "intermediate",
+    "note": "Finish Arrow Tip"
+  }
+]

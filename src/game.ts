@@ -39,12 +39,26 @@ const letterData = Object.entries(letterModules)
   })
   .filter((entry): entry is LetterPlot => entry !== null);
 
-const loadRandomPlotPoints = (): { name: string; points: PlotPoint[] } => {
+// Export available letters for the settings UI
+export const availableLetters = letterData.map((entry) => entry.name).sort();
+
+const loadRandomPlotPoints = (enabledLetters?: Set<string>): { name: string; points: PlotPoint[] } => {
   if (letterData.length === 0) {
     return { name: 'unknown', points: [] };
   }
 
-  const selected = letterData[Math.floor(Math.random() * letterData.length)];
+  // Filter to only enabled letters if provided
+  let filteredData = letterData;
+  if (enabledLetters && enabledLetters.size > 0) {
+    filteredData = letterData.filter((entry) => enabledLetters.has(entry.name));
+  }
+
+  // Fallback to all letters if filter results in empty set
+  if (filteredData.length === 0) {
+    filteredData = letterData;
+  }
+
+  const selected = filteredData[Math.floor(Math.random() * filteredData.length)];
   console.info('Selected letter:', selected.name);
   return {
     name: selected.name,
@@ -157,6 +171,7 @@ export class Game {
   private readonly completionMessageSeconds = 2;
   private callbacks: GameCallbacks;
   private currentLetterName = 'unknown';
+  private enabledLetters: Set<string> | null = null;
 
   constructor(input: InputHandler, callbacks: GameCallbacks = {}) {
     const selection = loadRandomPlotPoints();
@@ -170,6 +185,10 @@ export class Game {
       onMove: (point) => this.extendPath(point),
       onEnd: (point) => this.endPath(point),
     });
+  }
+
+  setEnabledLetters(letters: Set<string> | null): void {
+    this.enabledLetters = letters;
   }
 
   // Expose state for sparkle renderer
@@ -518,7 +537,7 @@ export class Game {
   }
 
   private resetForNewLetter(): void {
-    const selection = loadRandomPlotPoints();
+    const selection = loadRandomPlotPoints(this.enabledLetters ?? undefined);
     this.plotPoints = selection.points;
     this.plotBounds = computeBounds(this.plotPoints);
     this.currentLetterName = selection.name;

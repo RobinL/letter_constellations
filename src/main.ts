@@ -2,7 +2,7 @@ import './style.css';
 import { AuroraRenderer } from './aurora-renderer';
 import { SparkleRenderer } from './sparkle-renderer';
 import { CanvasManager } from './canvas-manager';
-import { Game } from './game';
+import { Game, availableLetters } from './game';
 import { InputHandler } from './input';
 import { PerformanceMonitor } from './performance-monitor';
 
@@ -173,6 +173,204 @@ async function main() {
   controlsBar.appendChild(volumeControl);
   controlsBar.appendChild(muteButton);
   app.appendChild(controlsBar);
+
+  // Settings button
+  const settingsButton = document.createElement('button');
+  settingsButton.className = 'settings-button';
+  settingsButton.type = 'button';
+  settingsButton.textContent = 'Letters';
+  app.appendChild(settingsButton);
+
+  // Settings overlay and modal
+  const settingsOverlay = document.createElement('div');
+  settingsOverlay.className = 'settings-overlay';
+
+  const settingsModal = document.createElement('div');
+  settingsModal.className = 'settings-modal';
+
+  const settingsTitle = document.createElement('h2');
+  settingsTitle.textContent = 'Select Letters';
+  settingsModal.appendChild(settingsTitle);
+
+  const settingsError = document.createElement('div');
+  settingsError.className = 'settings-error';
+  settingsError.textContent = 'Please select at least one letter';
+  settingsModal.appendChild(settingsError);
+
+  // Letter grid
+  const letterGrid = document.createElement('div');
+  letterGrid.className = 'letter-grid';
+
+  // All 26 letters for the grid
+  const allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+  const availableLetterSet = new Set(availableLetters);
+
+  // Load saved selection from localStorage or default to all available
+  const STORAGE_KEY = 'letterConstellations_enabledLetters';
+  const loadEnabledLetters = (): Set<string> => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as string[];
+        const validLetters = parsed.filter((l) => availableLetterSet.has(l));
+        if (validLetters.length > 0) {
+          return new Set(validLetters);
+        }
+      }
+    } catch {
+      // Ignore parse errors
+    }
+    // Default to all available letters
+    return new Set(availableLetters);
+  };
+
+  const saveEnabledLetters = (letters: Set<string>): void => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...letters]));
+    } catch {
+      // Ignore storage errors
+    }
+  };
+
+  let enabledLetters = loadEnabledLetters();
+  const letterCheckboxes = new Map<string, HTMLInputElement>();
+
+  for (const letter of allLetters) {
+    const isAvailable = availableLetterSet.has(letter);
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'letter-checkbox';
+    checkbox.id = `letter-${letter}`;
+    checkbox.checked = enabledLetters.has(letter);
+    checkbox.disabled = !isAvailable;
+
+    const label = document.createElement('label');
+    label.className = 'letter-label';
+    label.htmlFor = `letter-${letter}`;
+    label.textContent = letter;
+    if (!isAvailable) {
+      label.title = 'Coming soon';
+    }
+
+    letterGrid.appendChild(checkbox);
+    letterGrid.appendChild(label);
+
+    if (isAvailable) {
+      letterCheckboxes.set(letter, checkbox);
+    }
+  }
+  settingsModal.appendChild(letterGrid);
+
+  // Settings buttons
+  const settingsButtons = document.createElement('div');
+  settingsButtons.className = 'settings-buttons';
+
+  const selectAllBtn = document.createElement('button');
+  selectAllBtn.className = 'settings-btn';
+  selectAllBtn.type = 'button';
+  selectAllBtn.textContent = 'Select All';
+
+  const selectNoneBtn = document.createElement('button');
+  selectNoneBtn.className = 'settings-btn';
+  selectNoneBtn.type = 'button';
+  selectNoneBtn.textContent = 'Select None';
+
+  const doneBtn = document.createElement('button');
+  doneBtn.className = 'settings-btn primary';
+  doneBtn.type = 'button';
+  doneBtn.textContent = 'Done';
+
+  settingsButtons.appendChild(selectAllBtn);
+  settingsButtons.appendChild(selectNoneBtn);
+  settingsButtons.appendChild(doneBtn);
+  settingsModal.appendChild(settingsButtons);
+
+  settingsOverlay.appendChild(settingsModal);
+  app.appendChild(settingsOverlay);
+
+  const updateEnabledFromCheckboxes = (): void => {
+    enabledLetters = new Set<string>();
+    for (const [letter, checkbox] of letterCheckboxes) {
+      if (checkbox.checked) {
+        enabledLetters.add(letter);
+      }
+    }
+  };
+
+  const showError = (show: boolean): void => {
+    if (show) {
+      settingsError.classList.add('visible');
+    } else {
+      settingsError.classList.remove('visible');
+    }
+  };
+
+  const openSettings = (): void => {
+    // Reset checkboxes to current enabled state
+    for (const [letter, checkbox] of letterCheckboxes) {
+      checkbox.checked = enabledLetters.has(letter);
+    }
+    showError(false);
+    settingsOverlay.classList.add('visible');
+  };
+
+  const closeSettings = (save: boolean): void => {
+    if (save) {
+      updateEnabledFromCheckboxes();
+      if (enabledLetters.size === 0) {
+        showError(true);
+        return;
+      }
+      saveEnabledLetters(enabledLetters);
+      // Update the game with new enabled letters
+      if (game) {
+        game.setEnabledLetters(enabledLetters);
+      }
+    }
+    showError(false);
+    settingsOverlay.classList.remove('visible');
+  };
+
+  settingsButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    openSettings();
+  });
+
+  selectAllBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    for (const checkbox of letterCheckboxes.values()) {
+      checkbox.checked = true;
+    }
+    showError(false);
+  });
+
+  selectNoneBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    for (const checkbox of letterCheckboxes.values()) {
+      checkbox.checked = false;
+    }
+  });
+
+  doneBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    closeSettings(true);
+  });
+
+  // Close on overlay click (but not modal click)
+  settingsOverlay.addEventListener('click', (event) => {
+    if (event.target === settingsOverlay) {
+      closeSettings(false);
+    }
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && settingsOverlay.classList.contains('visible')) {
+      closeSettings(false);
+    }
+  });
+
   const volumeSlider = volumeControl.querySelector<HTMLInputElement>('#volume-slider')!;
   currentVolume = Number(volumeSlider.value);
   chimeAudio.volume = Math.min(1, currentVolume);
@@ -447,6 +645,9 @@ async function main() {
       requestLetterSound(letter);
     },
   });
+
+  // Set initial enabled letters from saved settings
+  game.setEnabledLetters(enabledLetters);
 
   letterDisplay.addEventListener('click', (event) => {
     event.stopPropagation();
