@@ -57,7 +57,8 @@ export type PathPoint = {
 
 export class Game {
   private plotPoints: PlotPoint[] = [];
-  private currentPath: PathPoint[] = [];
+  private paths: PathPoint[][] = [];
+  private currentPath: PathPoint[] | null = null;
   private fadeSeconds = 9;
   private maxPoints = 600;
   private isDrawing = false;
@@ -67,7 +68,7 @@ export class Game {
   private lastPlotSize = { width: 0, height: 0 };
   private currentTargetIndex = 0;
   private dotRadius = 20;
-  private hitRadiusScale = 2.15;
+  private hitRadiusScale = 1.5;
   private lineSegmentIndex = 0;
   private lineSegmentT = 0;
   private linePauseRemaining = 0;
@@ -91,11 +92,12 @@ export class Game {
     mouseY: number;
     trailPoints: PathPoint[];
   } {
+    const trailPoints = this.paths.flatMap((path) => path);
     return {
       isDrawing: this.isDrawing,
       mouseX: this.currentMousePos.x,
       mouseY: this.currentMousePos.y,
-      trailPoints: [...this.currentPath],
+      trailPoints,
     };
   }
 
@@ -151,14 +153,22 @@ export class Game {
   update(deltaTime: number): void {
     this.advancePlotAnimation(deltaTime);
 
-    if (this.currentPath.length > 0) {
+    if (this.paths.length > 0) {
       const now = performance.now() / 1000;
       const cutoff = now - this.fadeSeconds;
-      this.currentPath = this.currentPath.filter((point) => point.time >= cutoff);
-
-      if (this.currentPath.length > this.maxPoints) {
-        this.currentPath = this.currentPath.slice(-this.maxPoints);
+      for (const path of this.paths) {
+        let keepIndex = 0;
+        while (keepIndex < path.length && path[keepIndex].time < cutoff) {
+          keepIndex += 1;
+        }
+        if (keepIndex > 0) {
+          path.splice(0, keepIndex);
+        }
+        if (path.length > this.maxPoints) {
+          path.splice(0, path.length - this.maxPoints);
+        }
       }
+      this.paths = this.paths.filter((path) => path.length > 0);
     }
   }
 
@@ -170,7 +180,7 @@ export class Game {
 
     this.renderPlotLines(ctx);
 
-    if (this.currentPath.length === 0) {
+    if (this.paths.length === 0) {
       return;
     }
 
@@ -179,15 +189,20 @@ export class Game {
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
 
-    ctx.beginPath();
-    this.currentPath.forEach((point, index) => {
-      if (index === 0) {
-        ctx.moveTo(point.x, point.y);
-      } else {
-        ctx.lineTo(point.x, point.y);
+    for (const path of this.paths) {
+      if (path.length === 0) {
+        continue;
       }
-    });
-    ctx.stroke();
+      ctx.beginPath();
+      path.forEach((point, index) => {
+        if (index === 0) {
+          ctx.moveTo(point.x, point.y);
+        } else {
+          ctx.lineTo(point.x, point.y);
+        }
+      });
+      ctx.stroke();
+    }
 
   }
 
@@ -195,20 +210,27 @@ export class Game {
     this.isDrawing = true;
     this.currentMousePos = { x: point.x, y: point.y };
     this.currentPath = [{ x: point.x, y: point.y, time: point.time }];
+    this.paths.push(this.currentPath);
     this.tryAdvanceTarget(point);
   }
 
   private extendPath(point: PointerPoint): void {
     this.currentMousePos = { x: point.x, y: point.y };
+    if (!this.currentPath) {
+      return;
+    }
     this.currentPath.push({ x: point.x, y: point.y, time: point.time });
     this.tryAdvanceTarget(point);
   }
 
   private endPath(point: PointerPoint): void {
     this.currentMousePos = { x: point.x, y: point.y };
-    this.currentPath.push({ x: point.x, y: point.y, time: point.time });
+    if (this.currentPath) {
+      this.currentPath.push({ x: point.x, y: point.y, time: point.time });
+    }
     this.tryAdvanceTarget(point);
     this.isDrawing = false;
+    this.currentPath = null;
   }
 
   private renderPlotLines(ctx: CanvasRenderingContext2D): void {
@@ -217,12 +239,19 @@ export class Game {
     }
 
     ctx.strokeStyle = 'rgba(255, 220, 0, 0.5)';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 9;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
 
     ctx.beginPath();
-    const points = this.scaledPlotPoints;
+    const startIndex = Math.min(
+      Math.max(0, this.currentTargetIndex - 1),
+      this.scaledPlotPoints.length - 1
+    );
+    const points = this.scaledPlotPoints.slice(startIndex);
+    if (points.length < 2) {
+      return;
+    }
     ctx.moveTo(points[0].x, points[0].y);
 
     if (this.linePauseRemaining > 0) {
@@ -265,6 +294,9 @@ export class Game {
         this.currentTargetIndex + 1,
         this.scaledPlotPoints.length
       );
+      this.lineSegmentIndex = 0;
+      this.lineSegmentT = 0;
+      this.linePauseRemaining = 0;
     }
   }
 
@@ -279,7 +311,14 @@ export class Game {
       return;
     }
 
-    const segmentCount = this.scaledPlotPoints.length - 1;
+    const remainingPoints = Math.max(
+      0,
+      this.scaledPlotPoints.length - Math.max(0, this.currentTargetIndex - 1)
+    );
+    if (remainingPoints < 2) {
+      return;
+    }
+    const segmentCount = remainingPoints - 1;
     this.lineSegmentIndex = Math.min(this.lineSegmentIndex, segmentCount - 1);
 
     if (this.linePauseRemaining > 0) {
