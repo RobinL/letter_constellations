@@ -1,0 +1,156 @@
+[
+  {
+    "order": 1,
+    "x": 250,
+    "y": 200,
+    "display": "keystone",
+    "note": "Start Black Dot (Top Left)"
+  },
+  {
+    "order": 2,
+    "x": 330,
+    "y": 200,
+    "display": "intermediate",
+    "note": "Top Horizontal"
+  },
+  {
+    "order": 3,
+    "x": 410,
+    "y": 200,
+    "display": "intermediate",
+    "note": "Top Horizontal"
+  },
+  {
+    "order": 4,
+    "x": 500,
+    "y": 200,
+    "display": "keystone",
+    "note": "Top Center"
+  },
+  {
+    "order": 5,
+    "x": 580,
+    "y": 200,
+    "display": "intermediate",
+    "note": "Top Horizontal"
+  },
+  {
+    "order": 6,
+    "x": 660,
+    "y": 200,
+    "display": "intermediate",
+    "note": "Approach Corner"
+  },
+  {
+    "order": 7,
+    "x": 750,
+    "y": 200,
+    "display": "keystone",
+    "note": "Top Right Corner (Turn)"
+  },
+  {
+    "order": 8,
+    "x": 690,
+    "y": 275,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 9,
+    "x": 630,
+    "y": 350,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 10,
+    "x": 570,
+    "y": 425,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 11,
+    "x": 500,
+    "y": 500,
+    "display": "keystone",
+    "note": "Center of Diagonal"
+  },
+  {
+    "order": 12,
+    "x": 430,
+    "y": 575,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 13,
+    "x": 370,
+    "y": 650,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 14,
+    "x": 310,
+    "y": 725,
+    "display": "intermediate",
+    "note": "Approach Bottom Corner"
+  },
+  {
+    "order": 15,
+    "x": 250,
+    "y": 800,
+    "display": "keystone",
+    "note": "Bottom Left Corner (Turn)"
+  },
+  {
+    "order": 16,
+    "x": 330,
+    "y": 800,
+    "display": "intermediate",
+    "note": "Bottom Horizontal"
+  },
+  {
+    "order": 17,
+    "x": 410,
+    "y": 800,
+    "display": "intermediate",
+    "note": "Bottom Horizontal"
+  },
+  {
+    "order": 18,
+    "x": 500,
+    "y": 800,
+    "display": "keystone",
+    "note": "Bottom Center"
+  },
+  {
+    "order": 19,
+    "x": 580,
+    "y": 800,
+    "display": "intermediate",
+    "note": "Bottom Horizontal"
+  },
+  {
+    "order": 20,
+    "x": 660,
+    "y": 800,
+    "display": "intermediate",
+    "note": "Approach End"
+  },
+  {
+    "order": 21,
+    "x": 750,
+    "y": 800,
+    "display": "keystone",
+    "note": "Arrow Head"
+  },
+  {
+    "order": 22,
+    "x": 780,
+    "y": 800,
+    "display": "intermediate",
+    "note": "Finish Tip"
+  }
+]

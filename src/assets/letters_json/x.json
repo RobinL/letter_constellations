@@ -1,0 +1,185 @@
+[
+  {
+    "order": 1,
+    "x": 250,
+    "y": 250,
+    "display": "keystone",
+    "note": "Start Black Dot (Top Left)"
+  },
+  {
+    "order": 2,
+    "x": 295,
+    "y": 305,
+    "display": "intermediate",
+    "note": "Diagonal Down-Right"
+  },
+  {
+    "order": 3,
+    "x": 340,
+    "y": 360,
+    "display": "intermediate",
+    "note": "Diagonal Down-Right"
+  },
+  {
+    "order": 4,
+    "x": 385,
+    "y": 415,
+    "display": "keystone",
+    "note": "Approaching Center"
+  },
+  {
+    "order": 5,
+    "x": 430,
+    "y": 470,
+    "display": "intermediate",
+    "note": "Diagonal Down-Right"
+  },
+  {
+    "order": 6,
+    "x": 475,
+    "y": 525,
+    "display": "intermediate",
+    "note": "Center Crossing"
+  },
+  {
+    "order": 7,
+    "x": 520,
+    "y": 580,
+    "display": "keystone",
+    "note": "Past Center"
+  },
+  {
+    "order": 8,
+    "x": 565,
+    "y": 635,
+    "display": "intermediate",
+    "note": "Diagonal Down-Right"
+  },
+  {
+    "order": 9,
+    "x": 610,
+    "y": 690,
+    "display": "intermediate",
+    "note": "Diagonal Down-Right"
+  },
+  {
+    "order": 10,
+    "x": 655,
+    "y": 745,
+    "display": "keystone",
+    "note": "Lower Right Section"
+  },
+  {
+    "order": 11,
+    "x": 700,
+    "y": 800,
+    "display": "intermediate",
+    "note": "Diagonal Down-Right"
+  },
+  {
+    "order": 12,
+    "x": 745,
+    "y": 855,
+    "display": "intermediate",
+    "note": "Approach Arrow"
+  },
+  {
+    "order": 13,
+    "x": 790,
+    "y": 910,
+    "display": "keystone",
+    "note": "Finish Stroke 1 Arrow"
+  },
+  {
+    "order": 14,
+    "x": 750,
+    "y": 250,
+    "display": "keystone",
+    "newStroke": true,
+    "note": "Start Stroke 2 (Top Right X)"
+  },
+  {
+    "order": 15,
+    "x": 705,
+    "y": 305,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 16,
+    "x": 660,
+    "y": 360,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 17,
+    "x": 615,
+    "y": 415,
+    "display": "keystone",
+    "note": "Approaching Center"
+  },
+  {
+    "order": 18,
+    "x": 570,
+    "y": 470,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 19,
+    "x": 525,
+    "y": 525,
+    "display": "intermediate",
+    "note": "Center Crossing"
+  },
+  {
+    "order": 20,
+    "x": 480,
+    "y": 580,
+    "display": "keystone",
+    "note": "Past Center"
+  },
+  {
+    "order": 21,
+    "x": 435,
+    "y": 635,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 22,
+    "x": 390,
+    "y": 690,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 23,
+    "x": 345,
+    "y": 745,
+    "display": "keystone",
+    "note": "Lower Left Section"
+  },
+  {
+    "order": 24,
+    "x": 300,
+    "y": 800,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 25,
+    "x": 255,
+    "y": 855,
+    "display": "intermediate",
+    "note": "Approach Arrow"
+  },
+  {
+    "order": 26,
+    "x": 210,
+    "y": 910,
+    "display": "keystone",
+    "note": "Finish Stroke 2 Arrow"
+  }
+]

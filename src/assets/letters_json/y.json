@@ -1,0 +1,115 @@
+[
+  {
+    "order": 1,
+    "x": 250,
+    "y": 200,
+    "display": "keystone",
+    "note": "Start Black Dot (Top Left)"
+  },
+  {
+    "order": 2,
+    "x": 300,
+    "y": 270,
+    "display": "intermediate",
+    "note": "Diagonal Down-Right"
+  },
+  {
+    "order": 3,
+    "x": 350,
+    "y": 340,
+    "display": "intermediate",
+    "note": "Diagonal Down-Right"
+  },
+  {
+    "order": 4,
+    "x": 400,
+    "y": 410,
+    "display": "keystone",
+    "note": "Approaching Center"
+  },
+  {
+    "order": 5,
+    "x": 450,
+    "y": 480,
+    "display": "intermediate",
+    "note": "Diagonal Down-Right"
+  },
+  {
+    "order": 6,
+    "x": 500,
+    "y": 550,
+    "display": "keystone",
+    "note": "Center Join Arrow"
+  },
+  {
+    "order": 7,
+    "x": 750,
+    "y": 200,
+    "display": "keystone",
+    "newStroke": true,
+    "note": "Start Stroke 2 (Top Right X)"
+  },
+  {
+    "order": 8,
+    "x": 700,
+    "y": 270,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 9,
+    "x": 650,
+    "y": 340,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 10,
+    "x": 600,
+    "y": 410,
+    "display": "keystone",
+    "note": "Approaching Center"
+  },
+  {
+    "order": 11,
+    "x": 550,
+    "y": 480,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 12,
+    "x": 500,
+    "y": 550,
+    "display": "intermediate",
+    "note": "Center Intersection"
+  },
+  {
+    "order": 13,
+    "x": 450,
+    "y": 620,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 14,
+    "x": 400,
+    "y": 690,
+    "display": "keystone",
+    "note": "Lower Tail Section"
+  },
+  {
+    "order": 15,
+    "x": 325,
+    "y": 795,
+    "display": "intermediate",
+    "note": "Diagonal Down-Left"
+  },
+  {
+    "order": 16,
+    "x": 250,
+    "y": 900,
+    "display": "keystone",
+    "note": "Finish Tail Arrow"
+  }
+]
