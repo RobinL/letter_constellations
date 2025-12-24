@@ -138,9 +138,19 @@ fn dotFragmentMain(in: VertexOut) -> @location(0) vec4<f32> {
     shock = smoothstep(shockR + shockW, shockR, d) * smoothstep(shockR - shockW, shockR, d);
   }
 
+  var emphasis = 1.0;
+  if (state > 0.5 && state < 1.5) {
+    emphasis = 1.25;
+  } else if (state >= 1.5) {
+    emphasis = 0.9;
+  } else {
+    emphasis = 0.8;
+  }
+
   var intensity = (core * 1.45 + glow * 1.2 + rays * 1.15 + ring + shock * 1.3 + flash * 1.4)
     * twinkle
-    * uniforms.global;
+    * uniforms.global
+    * emphasis;
   intensity = min(intensity, 1.0);
 
   // State colors: future red, target orange, done green

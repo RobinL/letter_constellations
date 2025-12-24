@@ -1,0 +1,94 @@
+[
+  {
+    "order": 1,
+    "x": 550,
+    "y": 280,
+    "display": "keystone",
+    "note": "Start Black Dot"
+  },
+  {
+    "order": 2,
+    "x": 550,
+    "y": 380,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 3,
+    "x": 550,
+    "y": 480,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 4,
+    "x": 550,
+    "y": 580,
+    "display": "keystone",
+    "note": "Stem Middle"
+  },
+  {
+    "order": 5,
+    "x": 550,
+    "y": 680,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 6,
+    "x": 550,
+    "y": 760,
+    "display": "intermediate",
+    "note": "Start Turn"
+  },
+  {
+    "order": 7,
+    "x": 530,
+    "y": 840,
+    "display": "keystone",
+    "note": "Curve Left"
+  },
+  {
+    "order": 8,
+    "x": 490,
+    "y": 900,
+    "display": "intermediate",
+    "note": "Curve Bottom Right"
+  },
+  {
+    "order": 9,
+    "x": 430,
+    "y": 930,
+    "display": "intermediate",
+    "note": "Curve Bottom Center"
+  },
+  {
+    "order": 10,
+    "x": 360,
+    "y": 920,
+    "display": "keystone",
+    "note": "Curve Bottom Left"
+  },
+  {
+    "order": 11,
+    "x": 310,
+    "y": 890,
+    "display": "intermediate",
+    "note": "Arrow Approach"
+  },
+  {
+    "order": 12,
+    "x": 280,
+    "y": 870,
+    "display": "intermediate",
+    "note": "Finish Arrow Tip"
+  },
+  {
+    "order": 13,
+    "x": 550,
+    "y": 140,
+    "display": "keystone",
+    "newStroke": true,
+    "note": "The Dot (Top X)"
+  }
+]

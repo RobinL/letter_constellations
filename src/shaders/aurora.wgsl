@@ -37,6 +37,14 @@ fn hash01(p: vec2<u32>, salt: u32) -> f32 {
     return f32(h) / 4294967296.0;
 }
 
+fn pow8(x: f32) -> f32 {
+    // x^8 using 3 squarings (cheap, predictable)
+    var v = x * x;
+    v = v * v;
+    v = v * v;
+    return v;
+}
+
 fn starFromCell(
     p: vec2<f32>,
     cellI: vec2<i32>,
@@ -71,21 +79,48 @@ fn starFromCell(
     glow = pow(glow, 2.0) * 0.35;
 
     let phase = hash01(cell, 4u) * 6.2831853;
-    let baseSpeed = mix(0.34, 1.20, hash01(cell, 5u)) * (10.0 / max(cellPx, 6.0));
+    let baseSpeed = mix(0.20, 0.70, hash01(cell, 5u)) * (10.0 / max(cellPx, 6.0));
     let t1 = 0.5 + 0.5 * sin(time * baseSpeed + phase);
     let t2 = 0.5 + 0.5 * sin(time * (baseSpeed * 1.73) + phase * 1.37);
-    let sparkle = pow(max(t1, t2), 4.4);
-    let slowBreath = 0.85 + 0.15 * sin(time * 0.20 + phase * 0.5);
-    let tw = mix(0.40, 2.55, sparkle) * slowBreath;
+    let pmax = max(t1, t2);
+
+    let p2 = pmax * pmax;
+    let p4 = p2 * p2;
+    let sparkle = p4 * pmax;
+
+    let p8 = p4 * p4;
+    let glint = p8 * p8;
+
+    let slowBreath = 0.85 + 0.15 * sin(time * 0.12 + phase * 0.5);
+    let tw = mix(0.82, 1.22, sparkle) * slowBreath;
+
+    let big = smoothstep(1.3, 3.0, sizePx);
+    let q = (p - centerPx) / max(1.0, sizePx * 3.0);
+    let qd = vec2<f32>(q.x + q.y, q.x - q.y) * 0.70710678;
+
+    let lx = max(0.0, 1.0 - abs(q.x));
+    let ly = max(0.0, 1.0 - abs(q.y));
+    let ldx = max(0.0, 1.0 - abs(qd.x));
+    let ldy = max(0.0, 1.0 - abs(qd.y));
+
+    let cross = pow8(lx) + pow8(ly);
+    let diag = pow8(ldx) + pow8(ldy);
+
+    let rayEnv = smoothstep(1.15, 0.0, length(q));
+    let rays = (cross * 0.75 + diag * 0.35) * rayEnv;
+
+    let glintJitter = mix(0.65, 1.35, hash01(cell, 8u));
+    let sparkleBurst = rays * glint * big * glintJitter * 1.2;
 
     let tintMix = hash01(cell, 6u);
     let cool = vec3<f32>(0.80, 0.88, 1.00);
     let warm = vec3<f32>(1.00, 0.95, 0.86);
     let tint = mix(cool, warm, tintMix);
-    let color = mix(vec3<f32>(1.0), tint, 0.25 + sparkle * 0.15);
+    var color = mix(vec3<f32>(1.0), tint, 0.22 + sparkle * 0.14);
+    color = mix(color, vec3<f32>(1.0), glint * big * 0.45);
 
     let brightJitter = mix(0.60, 1.60, hash01(cell, 7u));
-    let intensity = (core + glow) * tw * brightness * brightJitter;
+    let intensity = ((core + glow) * tw + sparkleBurst) * brightness * brightJitter;
     return color * intensity;
 }
 

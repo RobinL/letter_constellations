@@ -308,8 +308,8 @@ export class SparkleRenderer {
         }
       }
 
-      const sizeCss =
-        state === 1 ? baseRadius * 1.45 : state === 2 ? baseRadius * 1.2 : baseRadius * 1.05;
+      const sizeScale = state === 1 ? 1.7 : state === 2 ? 0.95 : 0.85;
+      const sizeCss = baseRadius * sizeScale;
       const sizePx = sizeCss * dpr;
 
       const base = i * FLOATS_PER_DOT;

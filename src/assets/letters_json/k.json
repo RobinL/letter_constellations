@@ -1,0 +1,94 @@
+[
+  {
+    "order": 1,
+    "x": 220,
+    "y": 180,
+    "display": "keystone",
+    "note": "Start Black Dot (Top of Stem)"
+  },
+  {
+    "order": 2,
+    "x": 220,
+    "y": 360,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 3,
+    "x": 220,
+    "y": 540,
+    "display": "intermediate",
+    "note": "Stem Middle"
+  },
+  {
+    "order": 4,
+    "x": 220,
+    "y": 720,
+    "display": "keystone",
+    "note": "Stem Lower"
+  },
+  {
+    "order": 5,
+    "x": 220,
+    "y": 900,
+    "display": "intermediate",
+    "note": "Stem Finish Arrow"
+  },
+  {
+    "order": 6,
+    "x": 680,
+    "y": 380,
+    "display": "keystone",
+    "newStroke": true,
+    "note": "Start 'X' (Top Right)"
+  },
+  {
+    "order": 7,
+    "x": 550,
+    "y": 460,
+    "display": "intermediate",
+    "note": "Diagonal In"
+  },
+  {
+    "order": 8,
+    "x": 420,
+    "y": 540,
+    "display": "intermediate",
+    "note": "Diagonal In"
+  },
+  {
+    "order": 9,
+    "x": 300,
+    "y": 620,
+    "display": "keystone",
+    "note": "The Turn (Touch Stem)"
+  },
+  {
+    "order": 10,
+    "x": 410,
+    "y": 690,
+    "display": "intermediate",
+    "note": "Diagonal Out"
+  },
+  {
+    "order": 11,
+    "x": 520,
+    "y": 760,
+    "display": "intermediate",
+    "note": "Diagonal Out"
+  },
+  {
+    "order": 12,
+    "x": 630,
+    "y": 830,
+    "display": "intermediate",
+    "note": "Diagonal Out"
+  },
+  {
+    "order": 13,
+    "x": 740,
+    "y": 900,
+    "display": "keystone",
+    "note": "Leg Finish Arrow"
+  }
+]

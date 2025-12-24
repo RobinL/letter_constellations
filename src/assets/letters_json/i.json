@@ -1,0 +1,80 @@
+[
+  {
+    "order": 1,
+    "x": 500,
+    "y": 350,
+    "display": "keystone",
+    "note": "Start Black Dot (Top of Stem)"
+  },
+  {
+    "order": 2,
+    "x": 500,
+    "y": 410,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 3,
+    "x": 500,
+    "y": 470,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 4,
+    "x": 500,
+    "y": 530,
+    "display": "keystone",
+    "note": "Stem Middle"
+  },
+  {
+    "order": 5,
+    "x": 500,
+    "y": 590,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 6,
+    "x": 500,
+    "y": 650,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 7,
+    "x": 500,
+    "y": 710,
+    "display": "keystone",
+    "note": "Stem Lower"
+  },
+  {
+    "order": 8,
+    "x": 500,
+    "y": 770,
+    "display": "intermediate",
+    "note": "Stem Down"
+  },
+  {
+    "order": 9,
+    "x": 500,
+    "y": 830,
+    "display": "intermediate",
+    "note": "Stem Approach Arrow"
+  },
+  {
+    "order": 10,
+    "x": 500,
+    "y": 900,
+    "display": "keystone",
+    "note": "Stem Finish Arrow"
+  },
+  {
+    "order": 11,
+    "x": 500,
+    "y": 150,
+    "display": "keystone",
+    "newStroke": true,
+    "note": "The Dot (Top X)"
+  }
+]
