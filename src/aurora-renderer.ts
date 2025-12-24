@@ -2,8 +2,8 @@
 // Sets up WebGPU pipeline and renders aurora effect over background
 
 import auroraShaderCode from './shaders/aurora.wgsl?raw';
-import backgroundLandscapeUrl from './assets/background_landscape.png';
-import backgroundPortraitUrl from './assets/background_portrait.png';
+import backgroundLandscapeUrl from './assets/background_landscape.png?url';
+import backgroundPortraitUrl from './assets/background_portrait.png?url';
 import { loadImageBitmap } from './assets';
 
 export class AuroraRenderer {
@@ -14,10 +14,16 @@ export class AuroraRenderer {
     private uniformBuffer!: GPUBuffer;
     private bindGroup!: GPUBindGroup;
     private bindGroupLayout!: GPUBindGroupLayout;
-    private backgroundLandscapeView!: GPUTextureView;
-    private backgroundPortraitView!: GPUTextureView;
+    private backgroundLandscapeImage!: ImageBitmap;
+    private backgroundPortraitImage!: ImageBitmap;
+    private backgroundLandscapeTexture?: GPUTexture;
+    private backgroundPortraitTexture?: GPUTexture;
+    private backgroundLandscapeView?: GPUTextureView;
+    private backgroundPortraitView?: GPUTextureView;
     private sampler!: GPUSampler;
     private currentBackground: 'landscape' | 'portrait' = 'landscape';
+    private backgroundTextureWidth = 0;
+    private backgroundTextureHeight = 0;
     private startTime: number;
 
     constructor(canvas: HTMLCanvasElement) {
@@ -55,10 +61,8 @@ export class AuroraRenderer {
             loadImageBitmap(backgroundLandscapeUrl),
             loadImageBitmap(backgroundPortraitUrl),
         ]);
-        this.backgroundLandscapeView =
-            this.createTextureFromImage(backgroundLandscape).createView();
-        this.backgroundPortraitView =
-            this.createTextureFromImage(backgroundPortrait).createView();
+        this.backgroundLandscapeImage = backgroundLandscape;
+        this.backgroundPortraitImage = backgroundPortrait;
 
         // Create sampler (no mipmaps needed for fullscreen background)
         this.sampler = this.device.createSampler({
@@ -127,9 +131,43 @@ export class AuroraRenderer {
         return true;
     }
 
-    private createTextureFromImage(imageBitmap: ImageBitmap): GPUTexture {
+    private createCoveredTexture(
+        imageBitmap: ImageBitmap,
+        width: number,
+        height: number
+    ): GPUTexture {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            throw new Error('Failed to get 2D context for background');
+        }
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+
+        const imageAspect = imageBitmap.width / imageBitmap.height;
+        const canvasAspect = width / height;
+        let drawWidth = width;
+        let drawHeight = height;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        if (canvasAspect > imageAspect) {
+            drawWidth = width;
+            drawHeight = Math.round(width / imageAspect);
+            offsetY = Math.floor((height - drawHeight) / 2);
+        } else {
+            drawHeight = height;
+            drawWidth = Math.round(height * imageAspect);
+            offsetX = Math.floor((width - drawWidth) / 2);
+        }
+
+        ctx.drawImage(imageBitmap, offsetX, offsetY, drawWidth, drawHeight);
+
         const texture = this.device.createTexture({
-            size: [imageBitmap.width, imageBitmap.height, 1],
+            size: [width, height, 1],
             format: 'rgba8unorm',
             usage:
                 GPUTextureUsage.TEXTURE_BINDING |
@@ -138,12 +176,42 @@ export class AuroraRenderer {
         });
 
         this.device.queue.copyExternalImageToTexture(
-            { source: imageBitmap },
+            { source: canvas },
             { texture: texture },
-            [imageBitmap.width, imageBitmap.height]
+            [width, height]
         );
 
         return texture;
+    }
+
+    private refreshBackgroundTextures(width: number, height: number): void {
+        if (width === 0 || height === 0) {
+            return;
+        }
+
+        if (this.backgroundLandscapeTexture) {
+            this.backgroundLandscapeTexture.destroy();
+        }
+        if (this.backgroundPortraitTexture) {
+            this.backgroundPortraitTexture.destroy();
+        }
+
+        this.backgroundLandscapeTexture = this.createCoveredTexture(
+            this.backgroundLandscapeImage,
+            width,
+            height
+        );
+        this.backgroundPortraitTexture = this.createCoveredTexture(
+            this.backgroundPortraitImage,
+            width,
+            height
+        );
+        this.backgroundLandscapeView =
+            this.backgroundLandscapeTexture.createView();
+        this.backgroundPortraitView =
+            this.backgroundPortraitTexture.createView();
+        this.backgroundTextureWidth = width;
+        this.backgroundTextureHeight = height;
     }
 
     render(): void {
@@ -207,9 +275,18 @@ export class AuroraRenderer {
             return;
         }
 
+        let refreshed = false;
+        if (
+            this.canvas.width !== this.backgroundTextureWidth ||
+            this.canvas.height !== this.backgroundTextureHeight
+        ) {
+            this.refreshBackgroundTextures(this.canvas.width, this.canvas.height);
+            refreshed = true;
+        }
+
         const isPortrait = this.canvas.height > this.canvas.width;
         const desired = isPortrait ? 'portrait' : 'landscape';
-        if (desired === this.currentBackground && this.bindGroup) {
+        if (desired === this.currentBackground && this.bindGroup && !refreshed) {
             return;
         }
 
@@ -218,6 +295,9 @@ export class AuroraRenderer {
             desired === 'portrait'
                 ? this.backgroundPortraitView
                 : this.backgroundLandscapeView;
+        if (!view) {
+            return;
+        }
 
         this.bindGroup = this.device.createBindGroup({
             layout: this.bindGroupLayout,

@@ -14,16 +14,27 @@ type ItemEntry = {
 
 const itemImageModules = import.meta.glob('./assets/items/*/*.png', {
   eager: true,
-  as: 'url',
+  query: { as: 'url' },
 });
 const itemVoiceModules = import.meta.glob('./assets/voice/*/*.webm', {
   eager: true,
-  as: 'url',
+  query: { as: 'url' },
 });
 const alphabetVoiceModules = import.meta.glob('./assets/voice/alphabet/*.webm', {
   eager: true,
-  as: 'url',
+  query: { as: 'url' },
 });
+
+const toAssetUrl = (mod: unknown): string => {
+  if (typeof mod === 'string') {
+    return mod;
+  }
+  if (mod && typeof mod === 'object' && 'default' in mod) {
+    const value = (mod as { default?: unknown }).default;
+    return typeof value === 'string' ? value : '';
+  }
+  return '';
+};
 
 const parseAssetInfo = (path: string): { folder: string; name: string } => {
   const parts = path.split('/');
@@ -34,12 +45,15 @@ const parseAssetInfo = (path: string): { folder: string; name: string } => {
 };
 
 const itemAudioByLetter = new Map<string, Map<string, string>>();
-for (const [path, url] of Object.entries(itemVoiceModules)) {
+for (const [path, mod] of Object.entries(itemVoiceModules)) {
   const { folder, name } = parseAssetInfo(path);
   if (folder === 'alphabet') {
     continue;
   }
-  const normalizedUrl = url as string;
+  const normalizedUrl = toAssetUrl(mod);
+  if (!normalizedUrl) {
+    continue;
+  }
   if (!itemAudioByLetter.has(folder)) {
     itemAudioByLetter.set(folder, new Map());
   }
@@ -47,9 +61,13 @@ for (const [path, url] of Object.entries(itemVoiceModules)) {
 }
 
 const itemImagesByLetter = new Map<string, ItemEntry[]>();
-for (const [path, url] of Object.entries(itemImageModules)) {
+for (const [path, mod] of Object.entries(itemImageModules)) {
   const { folder, name } = parseAssetInfo(path);
   const label = name.replace(/_/g, ' ');
+  const imageUrl = toAssetUrl(mod);
+  if (!imageUrl) {
+    continue;
+  }
   const audioUrl = itemAudioByLetter.get(folder)?.get(name);
   if (!itemImagesByLetter.has(folder)) {
     itemImagesByLetter.set(folder, []);
@@ -57,15 +75,19 @@ for (const [path, url] of Object.entries(itemImageModules)) {
   itemImagesByLetter.get(folder)!.push({
     name,
     label,
-    imageUrl: url as string,
+    imageUrl,
     audioUrl,
   });
 }
 
 const alphabetAudioByLetter = new Map<string, string>();
-for (const [path, url] of Object.entries(alphabetVoiceModules)) {
+for (const [path, mod] of Object.entries(alphabetVoiceModules)) {
   const { name } = parseAssetInfo(path);
-  alphabetAudioByLetter.set(name, url as string);
+  const audioUrl = toAssetUrl(mod);
+  if (!audioUrl) {
+    continue;
+  }
+  alphabetAudioByLetter.set(name, audioUrl);
 }
 
 const pickRandomItems = <T,>(items: T[], count: number): T[] => {
