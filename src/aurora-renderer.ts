@@ -2,7 +2,8 @@
 // Sets up WebGPU pipeline and renders aurora effect over background
 
 import auroraShaderCode from './shaders/aurora.wgsl?raw';
-import backgroundUrl from './assets/background.png';
+import backgroundLandscapeUrl from './assets/background_landscape.png';
+import backgroundPortraitUrl from './assets/background_portrait.png';
 import { loadImageBitmap } from './assets';
 
 export class AuroraRenderer {
@@ -12,6 +13,11 @@ export class AuroraRenderer {
     private pipeline!: GPURenderPipeline;
     private uniformBuffer!: GPUBuffer;
     private bindGroup!: GPUBindGroup;
+    private bindGroupLayout!: GPUBindGroupLayout;
+    private backgroundLandscapeView!: GPUTextureView;
+    private backgroundPortraitView!: GPUTextureView;
+    private sampler!: GPUSampler;
+    private currentBackground: 'landscape' | 'portrait' = 'landscape';
     private startTime: number;
 
     constructor(canvas: HTMLCanvasElement) {
@@ -44,12 +50,18 @@ export class AuroraRenderer {
             alphaMode: 'premultiplied',
         });
 
-        // Load background texture
-        const backgroundImage = await loadImageBitmap(backgroundUrl);
-        const backgroundTexture = this.createTextureFromImage(backgroundImage);
+        // Load background textures
+        const [backgroundLandscape, backgroundPortrait] = await Promise.all([
+            loadImageBitmap(backgroundLandscapeUrl),
+            loadImageBitmap(backgroundPortraitUrl),
+        ]);
+        this.backgroundLandscapeView =
+            this.createTextureFromImage(backgroundLandscape).createView();
+        this.backgroundPortraitView =
+            this.createTextureFromImage(backgroundPortrait).createView();
 
         // Create sampler (no mipmaps needed for fullscreen background)
-        const sampler = this.device.createSampler({
+        this.sampler = this.device.createSampler({
             magFilter: 'linear',
             minFilter: 'linear',
         });
@@ -69,7 +81,7 @@ export class AuroraRenderer {
         });
 
         // Create bind group layout
-        const bindGroupLayout = this.device.createBindGroupLayout({
+        this.bindGroupLayout = this.device.createBindGroupLayout({
             entries: [
                 {
                     binding: 0,
@@ -88,20 +100,11 @@ export class AuroraRenderer {
                 },
             ],
         });
-
-        // Create bind group
-        this.bindGroup = this.device.createBindGroup({
-            layout: bindGroupLayout,
-            entries: [
-                { binding: 0, resource: { buffer: this.uniformBuffer } },
-                { binding: 1, resource: backgroundTexture.createView() },
-                { binding: 2, resource: sampler },
-            ],
-        });
+        this.updateBackgroundBindGroup();
 
         // Create pipeline layout
         const pipelineLayout = this.device.createPipelineLayout({
-            bindGroupLayouts: [bindGroupLayout],
+            bindGroupLayouts: [this.bindGroupLayout],
         });
 
         // Create render pipeline
@@ -184,6 +187,8 @@ export class AuroraRenderer {
         this.canvas.width = width;
         this.canvas.height = height;
 
+        this.updateBackgroundBindGroup();
+
         // Reconfigure WebGPU context with new drawable size
         const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
         this.context.configure({
@@ -195,5 +200,32 @@ export class AuroraRenderer {
 
     getDevice(): GPUDevice {
         return this.device;
+    }
+
+    private updateBackgroundBindGroup(): void {
+        if (!this.uniformBuffer || !this.bindGroupLayout) {
+            return;
+        }
+
+        const isPortrait = this.canvas.height > this.canvas.width;
+        const desired = isPortrait ? 'portrait' : 'landscape';
+        if (desired === this.currentBackground && this.bindGroup) {
+            return;
+        }
+
+        this.currentBackground = desired;
+        const view =
+            desired === 'portrait'
+                ? this.backgroundPortraitView
+                : this.backgroundLandscapeView;
+
+        this.bindGroup = this.device.createBindGroup({
+            layout: this.bindGroupLayout,
+            entries: [
+                { binding: 0, resource: { buffer: this.uniformBuffer } },
+                { binding: 1, resource: view },
+                { binding: 2, resource: this.sampler },
+            ],
+        });
     }
 }

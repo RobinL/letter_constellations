@@ -68,6 +68,11 @@ export class Game {
   private currentTargetIndex = 0;
   private dotRadius = 20;
   private hitRadiusScale = 1.5;
+  private lineSegmentIndex = 0;
+  private lineSegmentT = 0;
+  private linePauseRemaining = 0;
+  private readonly lineSegmentSeconds = 0.37;
+  private readonly lineLoopPauseSeconds = 0.4;
 
   constructor(input: InputHandler) {
     this.plotPoints = loadRandomPlotPoints();
@@ -144,17 +149,16 @@ export class Game {
   }
 
   update(deltaTime: number): void {
-    void deltaTime;
-    if (this.currentPath.length === 0) {
-      return;
-    }
+    this.advancePlotAnimation(deltaTime);
 
-    const now = performance.now() / 1000;
-    const cutoff = now - this.fadeSeconds;
-    this.currentPath = this.currentPath.filter((point) => point.time >= cutoff);
+    if (this.currentPath.length > 0) {
+      const now = performance.now() / 1000;
+      const cutoff = now - this.fadeSeconds;
+      this.currentPath = this.currentPath.filter((point) => point.time >= cutoff);
 
-    if (this.currentPath.length > this.maxPoints) {
-      this.currentPath = this.currentPath.slice(-this.maxPoints);
+      if (this.currentPath.length > this.maxPoints) {
+        this.currentPath = this.currentPath.slice(-this.maxPoints);
+      }
     }
   }
 
@@ -218,13 +222,28 @@ export class Game {
     ctx.lineCap = 'round';
 
     ctx.beginPath();
-    this.scaledPlotPoints.forEach((point, index) => {
-      if (index === 0) {
-        ctx.moveTo(point.x, point.y);
-      } else {
-        ctx.lineTo(point.x, point.y);
+    const points = this.scaledPlotPoints;
+    ctx.moveTo(points[0].x, points[0].y);
+
+    if (this.linePauseRemaining > 0) {
+      for (let i = 1; i < points.length; i += 1) {
+        ctx.lineTo(points[i].x, points[i].y);
       }
-    });
+    } else {
+      const lastIndex = Math.min(this.lineSegmentIndex, points.length - 1);
+      for (let i = 1; i <= lastIndex; i += 1) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
+
+      const nextIndex = Math.min(this.lineSegmentIndex + 1, points.length - 1);
+      if (nextIndex > this.lineSegmentIndex) {
+        const from = points[this.lineSegmentIndex];
+        const to = points[nextIndex];
+        const x = from.x + (to.x - from.x) * this.lineSegmentT;
+        const y = from.y + (to.y - from.y) * this.lineSegmentT;
+        ctx.lineTo(x, y);
+      }
+    }
     ctx.stroke();
   }
 
@@ -246,6 +265,37 @@ export class Game {
         this.currentTargetIndex + 1,
         this.scaledPlotPoints.length
       );
+    }
+  }
+
+  private advancePlotAnimation(deltaTime: number): void {
+    if (deltaTime <= 0 || this.scaledPlotPoints.length < 2) {
+      return;
+    }
+
+    const segmentCount = this.scaledPlotPoints.length - 1;
+    this.lineSegmentIndex = Math.min(this.lineSegmentIndex, segmentCount - 1);
+
+    if (this.linePauseRemaining > 0) {
+      this.linePauseRemaining = Math.max(0, this.linePauseRemaining - deltaTime);
+      if (this.linePauseRemaining > 0) {
+        return;
+      }
+      this.lineSegmentIndex = 0;
+      this.lineSegmentT = 0;
+    }
+
+    this.lineSegmentT += deltaTime / this.lineSegmentSeconds;
+    while (this.lineSegmentT >= 1) {
+      this.lineSegmentT -= 1;
+      this.lineSegmentIndex += 1;
+
+      if (this.lineSegmentIndex >= segmentCount) {
+        this.linePauseRemaining = this.lineLoopPauseSeconds;
+        this.lineSegmentIndex = 0;
+        this.lineSegmentT = 0;
+        break;
+      }
     }
   }
 }
