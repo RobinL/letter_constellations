@@ -5,6 +5,8 @@
 
 import dotShaderCode from './shaders/dots.wgsl?raw';
 import sparkShaderCode from './shaders/sparks.wgsl?raw';
+import cometNibShaderCode from './shaders/comet-nib.wgsl?raw';
+import type { QualityLevel } from './performance-monitor';
 
 export type TrailPoint = {
   x: number; // CSS pixels from Game
@@ -40,10 +42,14 @@ export class SparkleRenderer {
 
   private pipeline!: GPURenderPipeline;
   private dotPipeline!: GPURenderPipeline;
+  private cometNibPipeline!: GPURenderPipeline;
   private uniformBuffer!: GPUBuffer;
   private dotUniformBuffer!: GPUBuffer;
+  private cometNibUniformBuffer!: GPUBuffer;
+  private cometNibTrailBuffer!: GPUBuffer;
   private bindGroup!: GPUBindGroup;
   private dotBindGroup!: GPUBindGroup;
+  private cometNibBindGroup!: GPUBindGroup;
 
   private quadVertexBuffer!: GPUBuffer;
   private particleBuffer!: GPUBuffer;
@@ -54,6 +60,7 @@ export class SparkleRenderer {
   // Uniform scratch (32 bytes = 8 floats)
   private uniformScratch = new Float32Array(8);
   private dotUniformScratch = new Float32Array(8);
+  private cometNibUniformScratch = new Float32Array(8); // 32 bytes for comet nib uniforms
 
   // Mouse state (normalized 0..1)
   private mouseRamp = 0;
@@ -69,6 +76,28 @@ export class SparkleRenderer {
   private dotScratch = new Float32Array(MAX_DOTS * FLOATS_PER_DOT);
   private dotStates = new Int8Array(MAX_DOTS);
   private dotStateTimes = new Float32Array(MAX_DOTS);
+
+  // Nib state for comet effect - now with particle emission
+  private nibState = { active: false, x: 0, y: 0, dirX: 1, dirY: 0 };
+  private qualityLevel: QualityLevel = 'medium';
+
+  // Particle system for comet trail (256 particles max)
+  private readonly MAX_COMET_PARTICLES = 256;
+  private cometParticles: Array<{
+    x: number; y: number;      // spawn position (normalized)
+    vx: number; vy: number;    // velocity at spawn
+    spawnTime: number;
+    size: number;
+    seed: number;
+  }> = [];
+  private cometParticleScratch = new Float32Array(512 * 4); // 512 vec4s (256 pos/vel + 256 spawn data)
+  private lastParticleEmitTime = 0;
+  private readonly PARTICLE_EMIT_INTERVAL = 0.03; // emit particle every 30ms (halved particle count)
+  private prevNibPos = { x: 0, y: 0 };
+  private nibVelocity = { x: 0, y: 0 };
+  private nibInitialized = false; // Track if nib has valid previous position
+  private nibActivationTime = 0; // Track when nib was activated for startup delay
+  private readonly NIB_STARTUP_DELAY = 0.2; // 80ms delay before emitting particles
 
   // Particle ring buffer + batched writes (at most 2 writeBuffer calls/frame)
   private nextParticleIndex = 0;
@@ -129,6 +158,18 @@ export class SparkleRenderer {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
+    // Comet nib uniform buffer (32 bytes = 8 floats)
+    this.cometNibUniformBuffer = this.device.createBuffer({
+      size: 32,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    // Comet nib trail buffer (storage buffer for 256 particles, each needs 2 vec4s = 512 vec4s total)
+    this.cometNibTrailBuffer = this.device.createBuffer({
+      size: 512 * 4 * 4, // 512 vec4s = 8192 bytes
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+
     // Quad vertices (two triangles, 6 verts, vec2 each)
     this.quadVertexBuffer = this.device.createBuffer({
       size: 6 * 2 * 4,
@@ -164,6 +205,7 @@ export class SparkleRenderer {
 
     const dotShaderModule = this.device.createShaderModule({ code: dotShaderCode });
     const shaderModule = this.device.createShaderModule({ code: sparkShaderCode });
+    const cometNibShaderModule = this.device.createShaderModule({ code: cometNibShaderCode });
 
     const bindGroupLayout = this.device.createBindGroupLayout({
       entries: [
@@ -171,6 +213,22 @@ export class SparkleRenderer {
           binding: 0,
           visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
           buffer: { type: 'uniform' },
+        },
+      ],
+    });
+
+    // Comet nib needs both uniform and storage buffer
+    const cometNibBindGroupLayout = this.device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          buffer: { type: 'uniform' },
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          buffer: { type: 'read-only-storage' },
         },
       ],
     });
@@ -185,8 +243,20 @@ export class SparkleRenderer {
       entries: [{ binding: 0, resource: { buffer: this.dotUniformBuffer } }],
     });
 
+    this.cometNibBindGroup = this.device.createBindGroup({
+      layout: cometNibBindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: this.cometNibUniformBuffer } },
+        { binding: 1, resource: { buffer: this.cometNibTrailBuffer } },
+      ],
+    });
+
     const pipelineLayout = this.device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout],
+    });
+
+    const cometNibPipelineLayout = this.device.createPipelineLayout({
+      bindGroupLayouts: [cometNibBindGroupLayout],
     });
 
     // Additive color blending (fireworks/glitter feel)
@@ -273,6 +343,33 @@ export class SparkleRenderer {
       primitive: { topology: 'triangle-list' },
     });
 
+    // Comet nib pipeline (fullscreen triangle, no vertex buffers needed)
+    this.cometNibPipeline = this.device.createRenderPipeline({
+      layout: cometNibPipelineLayout,
+      vertex: {
+        module: cometNibShaderModule,
+        entryPoint: 'vertexMain',
+      },
+      fragment: {
+        module: cometNibShaderModule,
+        entryPoint: 'fragmentMain',
+        targets: [
+          {
+            format: presentationFormat,
+            blend: {
+              color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
+              alpha: {
+                srcFactor: 'one',
+                dstFactor: 'one-minus-src-alpha',
+                operation: 'add',
+              },
+            },
+          },
+        ],
+      },
+      primitive: { topology: 'triangle-list' },
+    });
+
     return true;
   }
 
@@ -328,6 +425,130 @@ export class SparkleRenderer {
       0,
       this.dotScratch.subarray(0, count * FLOATS_PER_DOT)
     );
+  }
+
+  setNibState(active: boolean, x: number, y: number, dirX: number, dirY: number): void {
+    const { cssW, cssH } = this.getCanvasMetrics();
+    const nowSec = (performance.now() - this.startTimeMs) / 1000;
+
+    const normX = x / cssW;
+    const normY = y / cssH;
+
+    // Handle activation/deactivation
+    if (active && !this.nibState.active) {
+      // Just activated - reset velocity tracking to prevent initial burst
+      this.nibInitialized = false;
+      this.nibVelocity = { x: 0, y: 0 };
+      this.prevNibPos = { x: normX, y: normY };
+      this.lastParticleEmitTime = nowSec;
+      this.nibActivationTime = nowSec; // Record activation time for startup delay
+    }
+
+    // Calculate velocity from position change (only if we have valid previous position)
+    const dt = nowSec - this.lastParticleEmitTime;
+    if (dt > 0 && dt < 0.1 && this.nibInitialized) {
+      const rawVx = (normX - this.prevNibPos.x) / dt;
+      const rawVy = (normY - this.prevNibPos.y) / dt;
+      // Clamp raw velocity to prevent extreme values
+      const maxVel = 3.0;
+      const clampedVx = Math.max(-maxVel, Math.min(maxVel, rawVx));
+      const clampedVy = Math.max(-maxVel, Math.min(maxVel, rawVy));
+      // Smooth velocity with EMA
+      this.nibVelocity.x = this.nibVelocity.x * 0.6 + clampedVx * 0.4;
+      this.nibVelocity.y = this.nibVelocity.y * 0.6 + clampedVy * 0.4;
+    }
+
+    this.nibState = {
+      active,
+      x: normX,
+      y: normY,
+      dirX,
+      dirY,
+    };
+
+    // Emit particles when nib is active
+    if (active) {
+      // Mark as initialized after first frame
+      if (!this.nibInitialized) {
+        this.nibInitialized = true;
+        this.prevNibPos = { x: normX, y: normY };
+        return; // Skip emission on first frame to establish baseline
+      }
+
+      // Wait for startup delay to let velocity stabilize
+      if (nowSec - this.nibActivationTime < this.NIB_STARTUP_DELAY) {
+        this.prevNibPos = { x: normX, y: normY };
+        return;
+      }
+
+      // Emit new particles at regular intervals
+      if (nowSec - this.lastParticleEmitTime >= this.PARTICLE_EMIT_INTERVAL) {
+        const speed = Math.hypot(this.nibVelocity.x, this.nibVelocity.y);
+
+        // Emit 1-2 particles depending on speed (reduced from 1-4)
+        const numToEmit = speed > 0.5 ? 2 : 1;
+
+        for (let i = 0; i < numToEmit; i++) {
+          const seed = Math.random();
+
+          // Radial spread - particles spread outward symmetrically from nib
+          const angle = Math.random() * Math.PI * 2;
+          const spreadSpeed = 0.0075 + Math.random() * 0.0125; // Gentle outward drift (halved)
+
+          // Base radial velocity
+          let vx = Math.cos(angle) * spreadSpeed;
+          let vy = Math.sin(angle) * spreadSpeed;
+
+          // Add slight bias opposite to movement direction (subtle trailing effect)
+          const trailBias = 0.3;
+          vx -= this.nibVelocity.x * 0.02 * trailBias;
+          vy -= this.nibVelocity.y * 0.02 * trailBias;
+
+          // Slight offset from nib position
+          const offsetX = (Math.random() - 0.5) * 0.004;
+          const offsetY = (Math.random() - 0.5) * 0.004;
+
+          this.cometParticles.unshift({
+            x: normX + offsetX,
+            y: normY + offsetY,
+            vx,
+            vy,
+            spawnTime: nowSec,
+            size: 0.005 + Math.random() * 0.006,
+            seed,
+          });
+        }
+
+        this.lastParticleEmitTime = nowSec;
+        this.prevNibPos = { x: normX, y: normY };
+      }
+
+      // Remove old particles (lifetime ~4.0 seconds)
+      const maxAge = 4.0;
+      while (this.cometParticles.length > 0 &&
+        nowSec - this.cometParticles[this.cometParticles.length - 1].spawnTime > maxAge) {
+        this.cometParticles.pop();
+      }
+
+      // Cap at max particles
+      if (this.cometParticles.length > this.MAX_COMET_PARTICLES) {
+        this.cometParticles.length = this.MAX_COMET_PARTICLES;
+      }
+    } else {
+      // Reset initialization when deactivated
+      this.nibInitialized = false;
+
+      // Gradually clear particles when not active (let them fade out)
+      const maxAge = 4.0;
+      while (this.cometParticles.length > 0 &&
+        nowSec - this.cometParticles[this.cometParticles.length - 1].spawnTime > maxAge) {
+        this.cometParticles.pop();
+      }
+    }
+  }
+
+  setQualityLevel(level: QualityLevel): void {
+    this.qualityLevel = level;
   }
 
   updateMouseState(active: boolean, x: number, y: number, trailPoints: TrailPoint[]): void {
@@ -579,6 +800,59 @@ export class SparkleRenderer {
     this.dotUniformScratch[7] = this.mousePos.y;
     this.device.queue.writeBuffer(this.dotUniformBuffer, 0, this.dotUniformScratch);
 
+    // Update comet nib uniforms (only on high/ultra quality)
+    const showCometNib = (this.qualityLevel === 'high' || this.qualityLevel === 'ultra') && this.nibState.active;
+    if (showCometNib) {
+      // Always include current nib position as first "particle" (the head)
+      const numParticles = Math.min(this.cometParticles.length + 1, this.MAX_COMET_PARTICLES);
+
+      // Clear scratch buffer
+      this.cometParticleScratch.fill(0);
+
+      // First particle is always the current nib position (comet head)
+      this.cometParticleScratch[0] = this.nibState.x;  // posX
+      this.cometParticleScratch[1] = this.nibState.y;  // posY
+      this.cometParticleScratch[2] = 0;                // velX (head doesn't drift)
+      this.cometParticleScratch[3] = 0;                // velY
+
+      // Spawn data for head (at index 256)
+      this.cometParticleScratch[256 * 4 + 0] = timeSec; // spawnTime (always "now")
+      this.cometParticleScratch[256 * 4 + 1] = 0.006;   // size
+      this.cometParticleScratch[256 * 4 + 2] = 0;       // seed
+      this.cometParticleScratch[256 * 4 + 3] = 0;
+
+      // Add emitted particles
+      for (let i = 0; i < Math.min(this.cometParticles.length, this.MAX_COMET_PARTICLES - 1); i++) {
+        const p = this.cometParticles[i];
+        const idx = i + 1; // offset by 1 because head is at 0
+
+        // Position and velocity (first 256 vec4s)
+        this.cometParticleScratch[idx * 4 + 0] = p.x;
+        this.cometParticleScratch[idx * 4 + 1] = p.y;
+        this.cometParticleScratch[idx * 4 + 2] = p.vx;
+        this.cometParticleScratch[idx * 4 + 3] = p.vy;
+
+        // Spawn data (second 256 vec4s, starting at index 256)
+        this.cometParticleScratch[(256 + idx) * 4 + 0] = p.spawnTime;
+        this.cometParticleScratch[(256 + idx) * 4 + 1] = p.size;
+        this.cometParticleScratch[(256 + idx) * 4 + 2] = p.seed;
+        this.cometParticleScratch[(256 + idx) * 4 + 3] = 0;
+      }
+
+      this.device.queue.writeBuffer(this.cometNibTrailBuffer, 0, this.cometParticleScratch);
+
+      // Update uniforms
+      this.cometNibUniformScratch[0] = timeSec;                // time
+      this.cometNibUniformScratch[1] = 0;                      // _pad0
+      this.cometNibUniformScratch[2] = this.canvas.width;      // resolution.x
+      this.cometNibUniformScratch[3] = this.canvas.height;     // resolution.y
+      this.cometNibUniformScratch[4] = 1.0;                    // nibActive
+      this.cometNibUniformScratch[5] = numParticles;           // numParticles
+      this.cometNibUniformScratch[6] = 0;                      // _pad1
+      this.cometNibUniformScratch[7] = 0;                      // _pad2
+      this.device.queue.writeBuffer(this.cometNibUniformBuffer, 0, this.cometNibUniformScratch);
+    }
+
     const commandEncoder = this.device.createCommandEncoder();
 
     const pass = commandEncoder.beginRenderPass({
@@ -605,6 +879,14 @@ export class SparkleRenderer {
     pass.setVertexBuffer(0, this.quadVertexBuffer);
     pass.setVertexBuffer(1, this.particleBuffer);
     pass.draw(6, MAX_PARTICLES, 0, 0);
+
+    // Render comet nib effect (only on high/ultra quality)
+    if (showCometNib) {
+      pass.setPipeline(this.cometNibPipeline);
+      pass.setBindGroup(0, this.cometNibBindGroup);
+      pass.draw(3, 1, 0, 0); // Fullscreen triangle
+    }
+
     pass.end();
 
     this.device.queue.submit([commandEncoder.finish()]);

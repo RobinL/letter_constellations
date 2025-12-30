@@ -90,5 +90,12 @@
     "display": "keystone",
     "newStroke": true,
     "note": "The Dot (Top X)"
+  },
+  {
+    "order": 14,
+    "x": 555,
+    "y": 147,
+    "display": "keystone",
+    "note": "The Dot (Top X)"
   }
 ]

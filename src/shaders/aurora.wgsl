@@ -133,19 +133,28 @@ fn starLayer(
     sizeMaxPx: f32,
     brightness: f32
 ) -> vec3<f32> {
-    let p = uv * uniforms.resolution;
+    // Use a fixed reference resolution for star positioning so stars don't
+    // jump when the canvas resizes (common on lower-powered devices)
+    let refResolution = vec2<f32>(1920.0, 1080.0);
+    let p = uv * refResolution;
     let baseCell = vec2<i32>(floor(p / cellPx));
+
+    // Scale factor to adjust star sizes for actual resolution
+    let sizeScale = min(uniforms.resolution.x, uniforms.resolution.y) / min(refResolution.x, refResolution.y);
+    let adjSizeMin = sizeMinPx * sizeScale;
+    let adjSizeMax = sizeMaxPx * sizeScale;
+
     var s = vec3<f32>(0.0);
 
-    s += starFromCell(p, baseCell + vec2<i32>(-1, -1), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
-    s += starFromCell(p, baseCell + vec2<i32>(0, -1), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
-    s += starFromCell(p, baseCell + vec2<i32>(1, -1), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
-    s += starFromCell(p, baseCell + vec2<i32>(-1, 0), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
-    s += starFromCell(p, baseCell, time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
-    s += starFromCell(p, baseCell + vec2<i32>(1, 0), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
-    s += starFromCell(p, baseCell + vec2<i32>(-1, 1), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
-    s += starFromCell(p, baseCell + vec2<i32>(0, 1), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
-    s += starFromCell(p, baseCell + vec2<i32>(1, 1), time, cellPx, density, sizeMinPx, sizeMaxPx, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(-1, -1), time, cellPx, density, adjSizeMin, adjSizeMax, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(0, -1), time, cellPx, density, adjSizeMin, adjSizeMax, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(1, -1), time, cellPx, density, adjSizeMin, adjSizeMax, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(-1, 0), time, cellPx, density, adjSizeMin, adjSizeMax, brightness);
+    s += starFromCell(p, baseCell, time, cellPx, density, adjSizeMin, adjSizeMax, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(1, 0), time, cellPx, density, adjSizeMin, adjSizeMax, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(-1, 1), time, cellPx, density, adjSizeMin, adjSizeMax, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(0, 1), time, cellPx, density, adjSizeMin, adjSizeMax, brightness);
+    s += starFromCell(p, baseCell + vec2<i32>(1, 1), time, cellPx, density, adjSizeMin, adjSizeMax, brightness);
 
     return s;
 }

@@ -600,6 +600,9 @@ async function main() {
   // Set up quality change handler
   performanceMonitor.setOnQualityChange((settings) => {
     canvasManager.updateQuality(settings);
+    if (sparkleRenderer) {
+      sparkleRenderer.setQualityLevel(settings.level);
+    }
     resize(); // Reapply sizes with new quality
   });
 
@@ -613,6 +616,9 @@ async function main() {
   // Initialize sparkle renderer
   sparkleRenderer = new SparkleRenderer(sparkleCanvas);
   const sparkleSuccess = await sparkleRenderer.initialize(renderer!.getDevice());
+
+  // Set initial quality level for sparkle renderer
+  sparkleRenderer.setQualityLevel(performanceMonitor.getCurrentLevel());
 
   // Call resize after initialization to ensure proper WebGPU context configuration
   resize();
@@ -694,6 +700,10 @@ async function main() {
 
     const dotState = game.getDotState();
     sparkleRenderer.setDots(dotState.dots, dotState.currentIndex, dotState.radius);
+
+    // Get nib state for comet effect (high quality only)
+    const nibState = game.getNibState();
+    sparkleRenderer.setNibState(nibState.active, nibState.x, nibState.y, nibState.dirX, nibState.dirY);
 
     // Render aurora background every other frame
     if ((auroraFrame++ & 1) === 0) {

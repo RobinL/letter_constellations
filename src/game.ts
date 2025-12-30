@@ -226,6 +226,83 @@ export class Game {
     };
   }
 
+  getNibState(): {
+    active: boolean;
+    x: number;
+    y: number;
+    dirX: number;
+    dirY: number;
+  } {
+    // Handle single dot in whole letter case (e.g., just a period)
+    if (this.scaledPlotPoints.length === 1) {
+      const dot = this.scaledPlotPoints[0];
+      if (this.currentTargetIndex === 0) {
+        return { active: true, x: dot.x, y: dot.y, dirX: 0, dirY: -1 };
+      }
+      return { active: false, x: 0, y: 0, dirX: 1, dirY: 0 };
+    }
+
+    // Get the current nib position and direction from the line animation
+    if (this.scaledPlotPoints.length < 2) {
+      return { active: false, x: 0, y: 0, dirX: 1, dirY: 0 };
+    }
+
+    const startIndex = Math.min(
+      Math.max(0, this.currentTargetIndex - 1),
+      this.scaledPlotPoints.length - 1
+    );
+    const points = this.scaledPlotPoints.slice(startIndex);
+    const segments = buildStrokeSegments(points, this.penUpDistanceThreshold);
+
+    // Handle isolated single dot case (like dot on "i" after pen-up)
+    // If no segments but we have points and haven't completed the current target
+    if (segments.length === 0) {
+      // Check if we're targeting a point that has no incoming segment (isolated dot)
+      if (this.currentTargetIndex < this.scaledPlotPoints.length && points.length >= 1) {
+        // The current target is an isolated dot - show nib there
+        const targetPoint = this.scaledPlotPoints[this.currentTargetIndex];
+        return { active: true, x: targetPoint.x, y: targetPoint.y, dirX: 0, dirY: -1 };
+      }
+      return { active: false, x: 0, y: 0, dirX: 1, dirY: 0 };
+    }
+
+    let index: number;
+    let t: number;
+
+    if (this.linePauseRemaining > 0) {
+      index = segments.length - 1;
+      t = 1;
+    } else {
+      index = Math.min(this.lineSegmentIndex, segments.length - 1);
+      t = this.lineSegmentT;
+    }
+
+    if (index < 0 || index >= segments.length) {
+      return { active: false, x: 0, y: 0, dirX: 1, dirY: 0 };
+    }
+
+    const segment = segments[index];
+    const from = points[segment.from];
+    const to = points[segment.to];
+    const clampedT = Math.max(0, Math.min(1, t));
+    const x = from.x + (to.x - from.x) * clampedT;
+    const y = from.y + (to.y - from.y) * clampedT;
+
+    // Direction is from -> to (the direction the nib is moving)
+    let dirX = to.x - from.x;
+    let dirY = to.y - from.y;
+    const len = Math.hypot(dirX, dirY);
+    if (len > 0.001) {
+      dirX /= len;
+      dirY /= len;
+    } else {
+      dirX = 1;
+      dirY = 0;
+    }
+
+    return { active: true, x, y, dirX, dirY };
+  }
+
   clearUserPaths(): void {
     this.paths = [];
     this.currentPath = null;
