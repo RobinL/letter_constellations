@@ -47,15 +47,17 @@ fn dotVertexMain(
     return out;
   }
 
+  // Expand quad size to prevent clipping of expanded stars and effects
+  let expandedQuad = quad * 4.0;
   let scaleUv = vec2<f32>(
     sizePx / uniforms.resolution.x,
     sizePx / uniforms.resolution.y
   );
-  let uv = pos + quad * scaleUv;
+  let uv = pos + expandedQuad * scaleUv;
   let clip = vec2<f32>(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0);
 
   out.position = vec4<f32>(clip, 0.0, 1.0);
-  out.local = quad;
+  out.local = expandedQuad;
   out.state = state;
   out.seed = seed;
   out.posUv = pos;
@@ -88,7 +90,7 @@ fn dotFragmentMain(in: VertexOut) -> @location(0) vec4<f32> {
   let q = in.local / scale;
   let d = length(q);
 
-  if (d > 1.6) {
+  if (d > 6.0) {
     return vec4<f32>(0.0);
   }
 
@@ -132,10 +134,16 @@ fn dotFragmentMain(in: VertexOut) -> @location(0) vec4<f32> {
   var flash = 0.0;
   var shock = 0.0;
   if (state >= 1.5) {
-    flash = exp(-stateAge * 14.0);
+    // Flash fades with distance from center (not uniform across quad)
+    let flashTimeFade = exp(-stateAge * 14.0);
+    let flashDistFade = pow(max(0.0, 1.0 - d * 0.5), 2.0);
+    flash = flashTimeFade * flashDistFade;
+
     let shockR = stateAge * 1.1 + 0.35;
     let shockW = 0.06;
-    shock = smoothstep(shockR + shockW, shockR, d) * smoothstep(shockR - shockW, shockR, d);
+    // Fade out the shockwave over time so it disappears smoothly
+    let shockFade = exp(-stateAge * 1.5);
+    shock = smoothstep(shockR + shockW, shockR, d) * smoothstep(shockR - shockW, shockR, d) * shockFade;
   }
 
   var emphasis = 1.0;
