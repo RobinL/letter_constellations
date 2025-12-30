@@ -110,7 +110,7 @@ fn starFromCell(
     let rays = (cross * 0.75 + diag * 0.35) * rayEnv;
 
     let glintJitter = mix(0.65, 1.35, hash01(cell, 8u));
-    let sparkleBurst = rays * glint * big * glintJitter * 1.2;
+    let sparkleBurst = rays * glint * big * glintJitter * 2.4;
 
     let tintMix = hash01(cell, 6u);
     let cool = vec3<f32>(0.80, 0.88, 1.00);
