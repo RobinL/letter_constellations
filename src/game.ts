@@ -1,14 +1,15 @@
 import type { PointerPoint } from './input';
 import { InputHandler } from './input';
-const letterModules = import.meta.glob('./assets/letters_json/*.json', {
-  eager: true,
-});
+import {
+  availableLetters as supportedLetters,
+  buildLetterPlot,
+  defaultLetterStyle,
+  type LetterPlot,
+  type LetterPlotPoint,
+  type SupportedLetterStyle,
+} from './letterpaths-adapter';
 
-type PlotPoint = {
-  order: number;
-  x: number;
-  y: number;
-};
+type PlotPoint = LetterPlotPoint;
 
 type PlotBounds = {
   minX: number;
@@ -27,50 +28,40 @@ type Point2D = {
   y: number;
 };
 
-type LetterPlot = {
-  name: string;
-  points: PlotPoint[];
-};
-
-const letterData = Object.entries(letterModules)
-  .map(([path, mod]) => {
-    const points = (mod as { default: PlotPoint[] }).default;
-    if (!Array.isArray(points)) {
-      return null;
-    }
-    const fileName = path.split('/').pop() ?? 'unknown';
-    const name = fileName.replace(/\.json$/i, '');
-    return { name, points };
-  })
-  .filter((entry): entry is LetterPlot => entry !== null);
-
 // Export available letters for the settings UI
-export const availableLetters = letterData.map((entry) => entry.name).sort();
+export const availableLetters = [...supportedLetters];
+export const availableLetterStyles: SupportedLetterStyle[] = ['print', 'pre-cursive'];
+export { defaultLetterStyle };
+export type { SupportedLetterStyle };
 
-const loadRandomPlotPoints = (enabledLetters?: Set<string>): { name: string; points: PlotPoint[] } => {
-  if (letterData.length === 0) {
+const getPlotForLetter = (
+  letter: string,
+  style: SupportedLetterStyle
+): LetterPlot => buildLetterPlot(letter, style);
+
+const loadRandomPlotPoints = (
+  letterStyle: SupportedLetterStyle,
+  enabledLetters?: Set<string>
+): { name: string; points: PlotPoint[] } => {
+  if (availableLetters.length === 0) {
     return { name: 'unknown', points: [] };
   }
 
   // Filter to only enabled letters if provided
-  let filteredData = letterData;
+  let filteredLetters = availableLetters;
   if (enabledLetters && enabledLetters.size > 0) {
-    filteredData = letterData.filter((entry) => enabledLetters.has(entry.name));
+    filteredLetters = availableLetters.filter((entry) => enabledLetters.has(entry));
   }
 
   // Fallback to all letters if filter results in empty set
-  if (filteredData.length === 0) {
-    filteredData = letterData;
+  if (filteredLetters.length === 0) {
+    filteredLetters = availableLetters;
   }
 
-  const selected = filteredData[Math.floor(Math.random() * filteredData.length)];
-  console.info('Selected letter:', selected.name);
-  return {
-    name: selected.name,
-    points: selected.points
-      .map((point) => ({ order: point.order, x: point.x, y: point.y }))
-      .sort((a, b) => a.order - b.order),
-  };
+  const selectedLetter = filteredLetters[Math.floor(Math.random() * filteredLetters.length)];
+  const selected = getPlotForLetter(selectedLetter, letterStyle);
+  console.info('Selected letter:', selected.name, 'style:', letterStyle);
+  return selected;
 };
 
 const computeBounds = (points: PlotPoint[]): PlotBounds => {
@@ -110,6 +101,9 @@ const computePenUpThreshold = (points: PlotPoint[]): number => {
   }
   const distances: number[] = [];
   for (let i = 0; i < points.length - 1; i += 1) {
+    if (points[i + 1].strokeStart) {
+      continue;
+    }
     const dx = points[i + 1].x - points[i].x;
     const dy = points[i + 1].y - points[i].y;
     distances.push(Math.hypot(dx, dy));
@@ -129,6 +123,9 @@ const buildStrokeSegments = (points: PlotPoint[], threshold: number): StrokeSegm
     return segments;
   }
   for (let i = 0; i < points.length - 1; i += 1) {
+    if (points[i + 1].strokeStart) {
+      continue;
+    }
     const dx = points[i + 1].x - points[i].x;
     const dy = points[i + 1].y - points[i].y;
     if (Math.hypot(dx, dy) > threshold) {
@@ -179,14 +176,12 @@ export class Game {
   private callbacks: GameCallbacks;
   private currentLetterName = 'unknown';
   private enabledLetters: Set<string> | null = null;
+  private letterStyle: SupportedLetterStyle = defaultLetterStyle;
 
   constructor(input: InputHandler, callbacks: GameCallbacks = {}) {
-    const selection = loadRandomPlotPoints();
-    this.plotPoints = selection.points;
-    this.plotBounds = computeBounds(this.plotPoints);
     this.callbacks = callbacks;
-    this.currentLetterName = selection.name;
-    this.callbacks.onLetterChange?.(this.currentLetterName);
+    const selection = loadRandomPlotPoints(this.letterStyle);
+    this.loadSelection(selection, true);
     input.setCallbacks({
       onStart: (point) => this.startPath(point),
       onMove: (point) => this.extendPath(point),
@@ -196,6 +191,15 @@ export class Game {
 
   setEnabledLetters(letters: Set<string> | null): void {
     this.enabledLetters = letters;
+  }
+
+  setLetterStyle(style: SupportedLetterStyle): void {
+    if (this.letterStyle === style) {
+      return;
+    }
+    this.letterStyle = style;
+    const selection = getPlotForLetter(this.currentLetterName, this.letterStyle);
+    this.loadSelection(selection, false);
   }
 
   // Expose state for sparkle renderer
@@ -357,6 +361,7 @@ export class Game {
       order: point.order,
       x: point.x * scale + offsetX,
       y: point.y * scale + offsetY,
+      strokeStart: point.strokeStart,
     }));
     this.penUpDistanceThreshold = computePenUpThreshold(this.scaledPlotPoints);
   }
@@ -689,17 +694,15 @@ export class Game {
     this.pendingLetterReset = true;
   }
 
-  private resetForNewLetter(): void {
-    const selection = loadRandomPlotPoints(this.enabledLetters ?? undefined);
+  private loadSelection(
+    selection: { name: string; points: PlotPoint[] },
+    notifyLetterChange: boolean
+  ): void {
     this.plotPoints = selection.points;
     this.plotBounds = computeBounds(this.plotPoints);
     this.currentLetterName = selection.name;
-    this.callbacks.onLetterChange?.(this.currentLetterName);
     this.scaledPlotPoints = [];
-    this.currentTargetIndex = 0;
-    this.lineSegmentIndex = 0;
-    this.lineSegmentT = 0;
-    this.linePauseRemaining = 0;
+    this.resetCurrentLetter();
     this.paths = [];
     this.currentPath = null;
     this.isDrawing = false;
@@ -708,6 +711,14 @@ export class Game {
     if (this.lastPlotSize.width > 0 && this.lastPlotSize.height > 0) {
       this.setViewportSize(this.lastPlotSize.width, this.lastPlotSize.height);
     }
+    if (notifyLetterChange) {
+      this.callbacks.onLetterChange?.(this.currentLetterName);
+    }
+  }
+
+  private resetForNewLetter(): void {
+    const selection = loadRandomPlotPoints(this.letterStyle, this.enabledLetters ?? undefined);
+    this.loadSelection(selection, true);
   }
 
   private renderCompletionMessage(ctx: CanvasRenderingContext2D): void {

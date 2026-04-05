@@ -2,7 +2,13 @@ import './style.css';
 import { AuroraRenderer } from './aurora-renderer';
 import { SparkleRenderer } from './sparkle-renderer';
 import { CanvasManager } from './canvas-manager';
-import { Game, availableLetters } from './game';
+import {
+  Game,
+  availableLetters,
+  availableLetterStyles,
+  defaultLetterStyle,
+  type SupportedLetterStyle,
+} from './game';
 import { InputHandler } from './input';
 import { PerformanceMonitor } from './performance-monitor';
 
@@ -189,7 +195,7 @@ async function main() {
   settingsModal.className = 'settings-modal';
 
   const settingsTitle = document.createElement('h2');
-  settingsTitle.textContent = 'Select Letters';
+  settingsTitle.textContent = 'Letter Settings';
   settingsModal.appendChild(settingsTitle);
 
   const settingsError = document.createElement('div');
@@ -197,19 +203,44 @@ async function main() {
   settingsError.textContent = 'Please select at least one letter';
   settingsModal.appendChild(settingsError);
 
+  const styleSection = document.createElement('div');
+  styleSection.className = 'settings-section';
+
+  const styleHeading = document.createElement('h3');
+  styleHeading.className = 'settings-section-title';
+  styleHeading.textContent = 'Style';
+  styleSection.appendChild(styleHeading);
+
+  const styleOptions = document.createElement('div');
+  styleOptions.className = 'style-options';
+  styleSection.appendChild(styleOptions);
+
+  settingsModal.appendChild(styleSection);
+
   // Letter grid
+  const letterSection = document.createElement('div');
+  letterSection.className = 'settings-section';
+
+  const letterHeading = document.createElement('h3');
+  letterHeading.className = 'settings-section-title';
+  letterHeading.textContent = 'Letters';
+  letterSection.appendChild(letterHeading);
+
   const letterGrid = document.createElement('div');
   letterGrid.className = 'letter-grid';
+  letterSection.appendChild(letterGrid);
+  settingsModal.appendChild(letterSection);
 
   // All 26 letters for the grid
   const allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
   const availableLetterSet = new Set(availableLetters);
 
   // Load saved selection from localStorage or default to all available
-  const STORAGE_KEY = 'letterConstellations_enabledLetters';
+  const LETTER_STORAGE_KEY = 'letterConstellations_enabledLetters';
+  const STYLE_STORAGE_KEY = 'letterConstellations_letterStyle';
   const loadEnabledLetters = (): Set<string> => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(LETTER_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved) as string[];
         const validLetters = parsed.filter((l) => availableLetterSet.has(l));
@@ -226,14 +257,65 @@ async function main() {
 
   const saveEnabledLetters = (letters: Set<string>): void => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([...letters]));
+      localStorage.setItem(LETTER_STORAGE_KEY, JSON.stringify([...letters]));
+    } catch {
+      // Ignore storage errors
+    }
+  };
+
+  const loadLetterStyle = (): SupportedLetterStyle => {
+    try {
+      const saved = localStorage.getItem(STYLE_STORAGE_KEY);
+      if (
+        saved &&
+        availableLetterStyles.includes(saved as SupportedLetterStyle)
+      ) {
+        return saved as SupportedLetterStyle;
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return defaultLetterStyle;
+  };
+
+  const saveLetterStyle = (style: SupportedLetterStyle): void => {
+    try {
+      localStorage.setItem(STYLE_STORAGE_KEY, style);
     } catch {
       // Ignore storage errors
     }
   };
 
   let enabledLetters = loadEnabledLetters();
+  let letterStyle = loadLetterStyle();
+  let draftLetterStyle = letterStyle;
   const letterCheckboxes = new Map<string, HTMLInputElement>();
+  const styleButtons = new Map<SupportedLetterStyle, HTMLButtonElement>();
+
+  const formatStyleLabel = (style: SupportedLetterStyle): string =>
+    style === 'pre-cursive' ? 'Pre-cursive' : 'Print';
+
+  const renderStyleSelection = (): void => {
+    for (const [style, button] of styleButtons) {
+      const isActive = style === draftLetterStyle;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-pressed', String(isActive));
+    }
+  };
+
+  for (const style of availableLetterStyles) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'style-option';
+    button.textContent = formatStyleLabel(style);
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      draftLetterStyle = style;
+      renderStyleSelection();
+    });
+    styleButtons.set(style, button);
+    styleOptions.appendChild(button);
+  }
 
   for (const letter of allLetters) {
     const isAvailable = availableLetterSet.has(letter);
@@ -260,8 +342,6 @@ async function main() {
       letterCheckboxes.set(letter, checkbox);
     }
   }
-  settingsModal.appendChild(letterGrid);
-
   // Settings buttons
   const settingsButtons = document.createElement('div');
   settingsButtons.className = 'settings-buttons';
@@ -311,6 +391,8 @@ async function main() {
     for (const [letter, checkbox] of letterCheckboxes) {
       checkbox.checked = enabledLetters.has(letter);
     }
+    draftLetterStyle = letterStyle;
+    renderStyleSelection();
     showError(false);
     settingsOverlay.classList.add('visible');
   };
@@ -323,9 +405,12 @@ async function main() {
         return;
       }
       saveEnabledLetters(enabledLetters);
+      letterStyle = draftLetterStyle;
+      saveLetterStyle(letterStyle);
       // Update the game with new enabled letters
       if (game) {
         game.setEnabledLetters(enabledLetters);
+        game.setLetterStyle(letterStyle);
       }
     }
     showError(false);
@@ -654,6 +739,7 @@ async function main() {
 
   // Set initial enabled letters from saved settings
   game.setEnabledLetters(enabledLetters);
+  game.setLetterStyle(letterStyle);
 
   letterDisplay.addEventListener('click', (event) => {
     event.stopPropagation();
