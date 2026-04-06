@@ -8,7 +8,7 @@ const getAppShellUrls = () => {
     root,
     new URL('index.html', root).toString(),
     new URL('manifest.webmanifest', root).toString(),
-    new URL('icon.svg', root).toString(),
+    new URL('icon.png', root).toString(),
     new URL('apple-touch-icon.png', root).toString(),
     new URL('pwa-192x192.png', root).toString(),
     new URL('pwa-512x512.png', root).toString(),
