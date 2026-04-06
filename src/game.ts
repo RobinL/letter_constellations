@@ -28,6 +28,13 @@ type Point2D = {
   y: number;
 };
 
+type ViewportInsets = {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+};
+
 // Export available letters for the settings UI
 export const availableLetters = [...supportedLetters];
 export const availableLetterStyles: SupportedLetterStyle[] = ['print', 'pre-cursive'];
@@ -158,6 +165,7 @@ export class Game {
   private plotBounds: PlotBounds = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
   private scaledPlotPoints: PlotPoint[] = [];
   private lastPlotSize = { width: 0, height: 0 };
+  private viewportInsets: ViewportInsets = { top: 24, right: 24, bottom: 24, left: 24 };
   private needsRescale = true;
   private currentTargetIndex = 0;
   private dotRadius = 20;
@@ -191,6 +199,23 @@ export class Game {
 
   setEnabledLetters(letters: Set<string> | null): void {
     this.enabledLetters = letters;
+  }
+
+  setViewportInsets(insets: ViewportInsets): void {
+    if (
+      this.viewportInsets.top === insets.top &&
+      this.viewportInsets.right === insets.right &&
+      this.viewportInsets.bottom === insets.bottom &&
+      this.viewportInsets.left === insets.left
+    ) {
+      return;
+    }
+
+    this.viewportInsets = insets;
+    this.needsRescale = true;
+    if (this.lastPlotSize.width > 0 && this.lastPlotSize.height > 0) {
+      this.setViewportSize(this.lastPlotSize.width, this.lastPlotSize.height);
+    }
   }
 
   setLetterStyle(style: SupportedLetterStyle): void {
@@ -349,13 +374,19 @@ export class Game {
       return;
     }
 
-    const targetWidth = viewportWidth * 0.5;
-    const targetHeight = viewportHeight * 0.5;
-    const scale = Math.min(targetWidth / boundsWidth, targetHeight / boundsHeight);
+    const paddingScale = this.letterStyle === 'print' ? 0.12 : 0.04;
+    const contentPadding = Math.max(10, Math.min(viewportWidth, viewportHeight) * paddingScale);
+    const availableLeft = this.viewportInsets.left + contentPadding;
+    const availableTop = this.viewportInsets.top + contentPadding;
+    const availableRight = viewportWidth - this.viewportInsets.right - contentPadding;
+    const availableBottom = viewportHeight - this.viewportInsets.bottom - contentPadding;
+    const availableWidth = Math.max(1, availableRight - availableLeft);
+    const availableHeight = Math.max(1, availableBottom - availableTop);
+    const scale = Math.min(availableWidth / boundsWidth, availableHeight / boundsHeight);
     const offsetX =
-      (viewportWidth - boundsWidth * scale) / 2 - this.plotBounds.minX * scale;
+      availableLeft + (availableWidth - boundsWidth * scale) / 2 - this.plotBounds.minX * scale;
     const offsetY =
-      (viewportHeight - boundsHeight * scale) / 2 - this.plotBounds.minY * scale;
+      availableTop + (availableHeight - boundsHeight * scale) / 2 - this.plotBounds.minY * scale;
 
     this.scaledPlotPoints = this.plotPoints.map((point) => ({
       order: point.order,

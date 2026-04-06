@@ -19,6 +19,13 @@ type ItemEntry = {
   audioUrl?: string;
 };
 
+type ViewportInsets = {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+};
+
 const itemImageModules = import.meta.glob('./assets/items/*/*.png', {
   eager: true,
   query: { as: 'url' },
@@ -657,6 +664,50 @@ async function main() {
   const performanceMonitor = new PerformanceMonitor();
   const canvasManager = new CanvasManager(auroraCanvas, gameCanvas, sparkleCanvas);
 
+  const computeViewportInsets = (): ViewportInsets => {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const edgePadding = Math.max(16, Math.min(width, height) * 0.02);
+    const controlsRect = controlsBar.getBoundingClientRect();
+    const letterPanelRect = letterPanel.getBoundingClientRect();
+    const letterDisplayRect = letterDisplay.getBoundingClientRect();
+    const itemTrayRect = itemTray.getBoundingClientRect();
+    const isPortrait = height >= width;
+
+    let top = edgePadding;
+    let right = edgePadding;
+    let bottom = edgePadding;
+    let left = edgePadding;
+
+    if (controlsRect.width > 0 && controlsRect.height > 0) {
+      top = Math.max(top, controlsRect.bottom + edgePadding);
+    }
+
+    if (isPortrait) {
+      if (letterPanelRect.width > 0 && letterPanelRect.height > 0) {
+        bottom = Math.max(bottom, height - letterPanelRect.top + edgePadding);
+      }
+    } else {
+      if (itemTrayRect.width > 0 && itemTrayRect.height > 0) {
+        left = Math.max(left, itemTrayRect.right + edgePadding);
+      }
+      if (letterDisplayRect.width > 0 && letterDisplayRect.height > 0) {
+        right = Math.max(right, width - letterDisplayRect.left + edgePadding);
+      }
+    }
+
+    return { top, right, bottom, left };
+  };
+
+  const applyGameViewportLayout = (): void => {
+    if (!game) {
+      return;
+    }
+    game.setViewportInsets(computeViewportInsets());
+    const size = canvasManager.getSize();
+    game.setViewportSize(size.width, size.height);
+  };
+
   // Apply initial quality settings
   canvasManager.updateQuality(performanceMonitor.getQualitySettings());
 
@@ -667,10 +718,10 @@ async function main() {
   }
 
   const resize = () => {
-    const { width, height } = canvasManager.resize();
+    canvasManager.resize();
     canvasManager.configureGameContext(gameContext);
     if (game) {
-      game.setViewportSize(width, height);
+      applyGameViewportLayout();
     }
 
     // Update renderers with new size (if initialized)
@@ -734,6 +785,7 @@ async function main() {
     onLetterChange: (letter) => {
       renderItemsForLetter(letter);
       requestLetterSound(letter);
+      applyGameViewportLayout();
     },
   });
 
@@ -758,8 +810,7 @@ async function main() {
     event.stopPropagation();
     game?.resetCurrentLetter();
   });
-  const size = canvasManager.getSize();
-  game.setViewportSize(size.width, size.height);
+  applyGameViewportLayout();
 
   // Main animation loop
   let lastTime = performance.now();
