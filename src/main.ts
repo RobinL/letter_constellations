@@ -113,6 +113,20 @@ const pickRandomItems = <T,>(items: T[], count: number): T[] => {
   return copy.slice(0, Math.min(count, copy.length));
 };
 
+const registerServiceWorker = async () => {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
+  const serviceWorkerUrl = new URL(
+    `${import.meta.env.BASE_URL}sw.js`,
+    window.location.origin
+  ).toString();
+  await navigator.serviceWorker.register(serviceWorkerUrl, {
+    scope: import.meta.env.BASE_URL,
+  });
+};
+
 async function main() {
   const app = document.querySelector<HTMLDivElement>('#app')!;
   const auroraAudioUrl = new URL('./assets/aurora.mp3', import.meta.url).toString();
@@ -859,4 +873,7 @@ async function main() {
   animate(performance.now());
 }
 
-main();
+void registerServiceWorker().catch((error: unknown) => {
+  console.error('Service worker registration failed.', error);
+});
+void main();
