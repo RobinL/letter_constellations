@@ -1,4 +1,4 @@
-const CACHE_NAME = 'letter-constellations-v1';
+const CACHE_NAME = 'letter-constellations-v2';
 
 const getAppRoot = () => self.registration.scope;
 
@@ -48,6 +48,15 @@ self.addEventListener('fetch', (event) => {
 
   const requestUrl = new URL(request.url);
   if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
+
+  if (
+    request.headers.has('range') ||
+    request.destination === 'audio' ||
+    request.destination === 'video'
+  ) {
+    event.respondWith(fetch(request));
     return;
   }
 
