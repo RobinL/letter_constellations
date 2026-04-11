@@ -40,6 +40,10 @@ export const availableLetters = [...supportedLetters];
 export const availableLetterStyles: SupportedLetterStyle[] = ['print', 'pre-cursive'];
 export { defaultLetterStyle };
 export type { SupportedLetterStyle };
+export const defaultCometSpeedMultiplier = 1;
+export const minCometSpeedMultiplier = 0.25;
+export const maxCometSpeedMultiplier = 8;
+export const cometSpeedStep = 0.05;
 
 const getPlotForLetter = (
   letter: string,
@@ -176,6 +180,7 @@ export class Game {
   private linePauseRemaining = 0;
   private readonly lineSegmentSeconds = 0.4;
   private readonly lineLoopPauseSeconds = 0.4;
+  private cometSpeedMultiplier = defaultCometSpeedMultiplier;
   private completionMessageUntil = 0;
   private pendingLetterReset = false;
   private readonly completionMessageSeconds = 2;
@@ -199,6 +204,13 @@ export class Game {
 
   setEnabledLetters(letters: Set<string> | null): void {
     this.enabledLetters = letters;
+    if (
+      letters &&
+      letters.size > 0 &&
+      !letters.has(this.currentLetterName)
+    ) {
+      this.resetForNewLetter();
+    }
   }
 
   setViewportInsets(insets: ViewportInsets): void {
@@ -225,6 +237,13 @@ export class Game {
     this.letterStyle = style;
     const selection = getPlotForLetter(this.currentLetterName, this.letterStyle);
     this.loadSelection(selection, false);
+  }
+
+  setCometSpeedMultiplier(multiplier: number): void {
+    this.cometSpeedMultiplier = Math.min(
+      maxCometSpeedMultiplier,
+      Math.max(minCometSpeedMultiplier, multiplier || defaultCometSpeedMultiplier)
+    );
   }
 
   // Expose state for sparkle renderer
@@ -677,7 +696,9 @@ export class Game {
       return;
     }
     const baseLength = computeMedian(nonZeroLengths);
-    const lineSpeed = baseLength / this.lineSegmentSeconds;
+    const effectiveSegmentSeconds =
+      this.lineSegmentSeconds / this.cometSpeedMultiplier;
+    const lineSpeed = baseLength / effectiveSegmentSeconds;
     this.lineSegmentIndex = Math.min(this.lineSegmentIndex, segmentCount - 1);
 
     if (this.linePauseRemaining > 0) {

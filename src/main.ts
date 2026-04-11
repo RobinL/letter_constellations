@@ -6,7 +6,11 @@ import {
   Game,
   availableLetters,
   availableLetterStyles,
+  cometSpeedStep,
   defaultLetterStyle,
+  defaultCometSpeedMultiplier,
+  maxCometSpeedMultiplier,
+  minCometSpeedMultiplier,
   type SupportedLetterStyle,
 } from './game';
 import { InputHandler } from './input';
@@ -112,6 +116,8 @@ const pickRandomItems = <T,>(items: T[], count: number): T[] => {
   }
   return copy.slice(0, Math.min(count, copy.length));
 };
+
+const formatCometSpeedLabel = (multiplier: number): string => `${multiplier.toFixed(2)}x`;
 
 const registerServiceWorker = async () => {
   if (!('serviceWorker' in navigator)) {
@@ -259,6 +265,7 @@ async function main() {
   // Load saved selection from localStorage or default to all available
   const LETTER_STORAGE_KEY = 'letterConstellations_enabledLetters';
   const STYLE_STORAGE_KEY = 'letterConstellations_letterStyle';
+  const COMET_SPEED_STORAGE_KEY = 'letterConstellations_cometSpeedMultiplier';
   const loadEnabledLetters = (): Set<string> => {
     try {
       const saved = localStorage.getItem(LETTER_STORAGE_KEY);
@@ -307,9 +314,35 @@ async function main() {
     }
   };
 
+  const loadCometSpeedMultiplier = (): number => {
+    try {
+      const saved = Number(localStorage.getItem(COMET_SPEED_STORAGE_KEY));
+      if (
+        Number.isFinite(saved) &&
+        saved >= minCometSpeedMultiplier &&
+        saved <= maxCometSpeedMultiplier
+      ) {
+        return saved;
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return defaultCometSpeedMultiplier;
+  };
+
+  const saveCometSpeedMultiplier = (multiplier: number): void => {
+    try {
+      localStorage.setItem(COMET_SPEED_STORAGE_KEY, String(multiplier));
+    } catch {
+      // Ignore storage errors
+    }
+  };
+
   let enabledLetters = loadEnabledLetters();
   let letterStyle = loadLetterStyle();
+  let cometSpeedMultiplier = loadCometSpeedMultiplier();
   let draftLetterStyle = letterStyle;
+  let draftCometSpeedMultiplier = cometSpeedMultiplier;
   const letterCheckboxes = new Map<string, HTMLInputElement>();
   const styleButtons = new Map<SupportedLetterStyle, HTMLButtonElement>();
 
@@ -337,6 +370,46 @@ async function main() {
     styleButtons.set(style, button);
     styleOptions.appendChild(button);
   }
+
+  const cometSection = document.createElement('div');
+  cometSection.className = 'settings-section';
+
+  const cometHeadingRow = document.createElement('div');
+  cometHeadingRow.className = 'settings-slider-header';
+
+  const cometHeading = document.createElement('h3');
+  cometHeading.className = 'settings-section-title';
+  cometHeading.textContent = 'Comet Speed';
+  cometHeadingRow.appendChild(cometHeading);
+
+  const cometSpeedValue = document.createElement('span');
+  cometSpeedValue.className = 'settings-slider-value';
+  cometHeadingRow.appendChild(cometSpeedValue);
+
+  cometSection.appendChild(cometHeadingRow);
+
+  const cometSpeedSlider = document.createElement('input');
+  cometSpeedSlider.className = 'settings-slider';
+  cometSpeedSlider.type = 'range';
+  cometSpeedSlider.min = String(minCometSpeedMultiplier);
+  cometSpeedSlider.max = String(maxCometSpeedMultiplier);
+  cometSpeedSlider.step = String(cometSpeedStep);
+  cometSpeedSlider.value = String(cometSpeedMultiplier);
+  cometSpeedSlider.setAttribute('aria-label', 'Comet speed');
+  cometSection.appendChild(cometSpeedSlider);
+
+  settingsModal.appendChild(cometSection);
+
+  const renderCometSpeedSelection = (): void => {
+    cometSpeedSlider.value = String(draftCometSpeedMultiplier);
+    cometSpeedValue.textContent = formatCometSpeedLabel(draftCometSpeedMultiplier);
+  };
+
+  cometSpeedSlider.addEventListener('input', (event) => {
+    event.stopPropagation();
+    draftCometSpeedMultiplier = Number(cometSpeedSlider.value);
+    renderCometSpeedSelection();
+  });
 
   for (const letter of allLetters) {
     const isAvailable = availableLetterSet.has(letter);
@@ -413,7 +486,9 @@ async function main() {
       checkbox.checked = enabledLetters.has(letter);
     }
     draftLetterStyle = letterStyle;
+    draftCometSpeedMultiplier = cometSpeedMultiplier;
     renderStyleSelection();
+    renderCometSpeedSelection();
     showError(false);
     settingsOverlay.classList.add('visible');
   };
@@ -427,11 +502,14 @@ async function main() {
       }
       saveEnabledLetters(enabledLetters);
       letterStyle = draftLetterStyle;
+      cometSpeedMultiplier = draftCometSpeedMultiplier;
       saveLetterStyle(letterStyle);
+      saveCometSpeedMultiplier(cometSpeedMultiplier);
       // Update the game with new enabled letters
       if (game) {
         game.setEnabledLetters(enabledLetters);
         game.setLetterStyle(letterStyle);
+        game.setCometSpeedMultiplier(cometSpeedMultiplier);
       }
     }
     showError(false);
@@ -806,6 +884,7 @@ async function main() {
   // Set initial enabled letters from saved settings
   game.setEnabledLetters(enabledLetters);
   game.setLetterStyle(letterStyle);
+  game.setCometSpeedMultiplier(cometSpeedMultiplier);
 
   letterDisplay.addEventListener('click', (event) => {
     event.stopPropagation();
