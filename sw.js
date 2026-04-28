@@ -1,4 +1,4 @@
-const CACHE_NAME = 'letter-constellations-v2';
+const CACHE_NAME = 'letter-constellations-letterpaths-1.0.1';
 
 const getAppRoot = () => self.registration.scope;
 
